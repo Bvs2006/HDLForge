@@ -1,69 +1,149 @@
-import Image from "next/image";
+import Link from "next/link";
+import { Code2, CheckCircle2, Activity, Sparkles, ArrowRight, ChevronRight } from "lucide-react";
 
-export default function Home() {
+const capabilities = [
+  {
+    title: "RTL Practice",
+    description: "Solve hardware-design problems directly in the browser with SystemVerilog syntax support.",
+    icon: Code2,
+  },
+  {
+    title: "Automated Verification",
+    description: "Run your RTL against hidden testbenches and receive instant feedback on correctness.",
+    icon: CheckCircle2,
+  },
+  {
+    title: "Waveform Debugging",
+    description: "Understand hardware behavior through simulation waveforms and signal analysis.",
+    icon: Activity,
+  },
+  {
+    title: "AI Hardware Tutor",
+    description: "Get HDL-specific explanations and debugging assistance powered by AI.",
+    icon: Sparkles,
+  },
+];
+
+const stats = [
+  { value: "500+", label: "HDL Problems" },
+  { value: "Verilog", label: "Verilog Support" },
+  { value: "SystemVerilog", label: "SystemVerilog" },
+  { value: "RTL", label: "RTL Focused" },
+];
+
+export default function HomePage() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
+    <div className="relative">
+      {/* Subtle gradient background */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 left-1/2 h-[500px] w-[800px] -translate-x-1/2 rounded-full bg-accent/5 blur-[120px]" />
+      </div>
+
+      {/* Hero */}
+      <section className="relative px-4 pb-20 pt-24 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-4xl text-center">
+          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-panel px-4 py-1.5 text-[11px] text-text-muted">
+            <span className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
+            Open Beta — Start practicing today
+          </div>
+
+          <h1 className="mb-6 text-4xl font-bold tracking-tight sm:text-6xl">
+            HDL<span className="text-accent">Forge</span>
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+
+          <p className="mb-4 text-2xl font-semibold sm:text-3xl">
+            Master Hardware Design.
+            <br />
+            <span className="text-text-secondary">One RTL problem at a time.</span>
           </p>
+
+          <p className="mx-auto mb-10 max-w-2xl text-base text-text-muted sm:text-lg">
+            Practice Verilog and SystemVerilog through real RTL design problems,
+            simulation, verification, and hardware-focused feedback.
+          </p>
+
+          <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Link
+              href="/problems"
+              className="inline-flex h-11 items-center gap-2 rounded-xl bg-accent px-6 text-sm font-semibold text-[#070707] transition-all hover:bg-accent-hover hover:shadow-[0_0_24px_rgba(0,217,165,0.3)]"
+            >
+              Start Practicing
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+            <Link
+              href="/problems"
+              className="inline-flex h-11 items-center gap-2 rounded-xl border border-border bg-panel px-6 text-sm font-medium text-text-secondary transition-all hover:border-accent/30 hover:bg-accent/5 hover:text-text-primary"
+            >
+              Explore Problems
+            </Link>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </section>
+
+      {/* Stats Bar */}
+      <section className="border-y border-border bg-panel/50 px-4 py-12 sm:px-6 lg:px-8">
+        <div className="mx-auto grid max-w-4xl grid-cols-2 gap-8 md:grid-cols-4">
+          {stats.map((stat) => (
+            <div key={stat.label} className="text-center">
+              <div className="text-2xl font-bold text-text-primary sm:text-3xl">{stat.value}</div>
+              <div className="mt-1 text-xs text-text-muted">{stat.label}</div>
+            </div>
+          ))}
         </div>
-      </main>
+      </section>
+
+      {/* Capabilities */}
+      <section className="px-4 py-20 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-5xl">
+          <div className="mb-12 text-center">
+            <h2 className="mb-3 text-2xl font-bold sm:text-3xl">Everything you need to master RTL design</h2>
+            <p className="text-sm text-text-muted">A complete platform for hardware engineers to practice, learn, and grow.</p>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            {capabilities.map((cap) => {
+              const Icon = cap.icon;
+              return (
+                <div
+                  key={cap.title}
+                  className="rounded-xl border border-border bg-panel p-6 transition-all hover:border-accent/20 hover:shadow-[0_0_20px_rgba(0,217,165,0.05)]"
+                >
+                  <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-accent/10 text-accent">
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <h3 className="mb-2 text-sm font-semibold text-text-primary">{cap.title}</h3>
+                  <p className="text-xs leading-relaxed text-text-muted">{cap.description}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="border-t border-border px-4 py-16 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-4xl text-center">
+          <h2 className="mb-4 text-2xl font-bold">Ready to start building hardware?</h2>
+          <p className="mb-8 text-sm text-text-muted">Jump into your first problem and start writing SystemVerilog today.</p>
+          <Link
+            href="/problems/and-gate"
+            className="inline-flex h-11 items-center gap-2 rounded-xl bg-accent px-8 text-sm font-semibold text-[#070707] transition-all hover:bg-accent-hover hover:shadow-[0_0_24px_rgba(0,217,165,0.3)]"
+          >
+            Solve Your First Problem
+            <ChevronRight className="h-4 w-4" />
+          </Link>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t border-border px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mx-auto flex max-w-7xl items-center justify-between text-xs text-text-dim">
+          <span>
+            HDL<span className="text-accent">Forge</span>
+          </span>
+          <span>Phase 1 — Frontend MVP</span>
+        </div>
+      </footer>
     </div>
   );
 }

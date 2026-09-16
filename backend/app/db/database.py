@@ -4,11 +4,14 @@ from sqlalchemy.orm import DeclarativeBase, sessionmaker
 from app.core.config import settings
 
 _db_url = settings.get_database_url()
-_engine_kwargs = {"echo": settings.DEBUG}
-if _db_url.startswith("sqlite"):
-    _engine_kwargs["connect_args"] = {"check_same_thread": False}
 
-engine = create_engine(_db_url, **_engine_kwargs)
+# Never allow SQLite in this application
+if _db_url.startswith("sqlite"):
+    raise RuntimeError(
+        "SQLite is not supported. Set DATABASE_URL to a PostgreSQL connection string."
+    )
+
+engine = create_engine(_db_url, echo=settings.DEBUG, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 

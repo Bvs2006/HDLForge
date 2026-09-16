@@ -1,4 +1,29 @@
 import {
+  supabaseFetchProblems,
+  supabaseFetchProblemBySlug,
+  supabaseFetchLeaderboard,
+  supabaseFetchMyRank,
+  supabaseFetchAllAchievements,
+  supabaseFetchMyAchievements,
+  supabaseFetchDiscussions,
+  supabaseFetchProblemSubmissions,
+} from "./supabase/queries";
+import { createClient } from "./supabase/client";
+
+async function getAuthHeader(): Promise<Record<string, string>> {
+  try {
+    const supabase = createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.access_token) {
+      return { Authorization: `Bearer ${session.access_token}` };
+    }
+  } catch {
+    // Ignore error
+  }
+  return {};
+}
+
+import {
   Problem,
   ProblemListResponse,
   SubmissionResult,
@@ -19,11 +44,13 @@ import {
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
+  const authHeader = await getAuthHeader();
   const url = `${API_BASE}${path}`;
   const res = await fetch(url, {
     ...options,
     headers: {
       "Content-Type": "application/json",
+      ...authHeader,
       ...options?.headers,
     },
   });
@@ -156,6 +183,8 @@ export async function fetchProblems(params?: {
   category?: string;
   search?: string;
 }): Promise<ProblemListResponse> {
+  const supabaseRes = await supabaseFetchProblems(params);
+  if (supabaseRes) return supabaseRes;
   const searchParams = new URLSearchParams();
   if (params?.difficulty && params.difficulty !== "all") {
     searchParams.set("difficulty", params.difficulty.toUpperCase());
@@ -178,6 +207,8 @@ export async function fetchProblems(params?: {
 }
 
 export async function fetchProblemBySlug(slug: string): Promise<Problem> {
+  const supabaseProblem = await supabaseFetchProblemBySlug(slug);
+  if (supabaseProblem) return supabaseProblem;
   const data = await apiFetch<ApiProblem>(`/api/problems/${slug}`);
   return transformProblem(data);
 }
@@ -309,6 +340,8 @@ export async function fetchLeaderboard(params?: {
   limit?: number;
   search?: string;
 }): Promise<LeaderboardResponse> {
+  const supabaseLeaderboard = await supabaseFetchLeaderboard(params);
+  if (supabaseLeaderboard) return supabaseLeaderboard;
   const searchParams = new URLSearchParams();
   if (params?.page) searchParams.set("page", String(params.page));
   if (params?.limit) searchParams.set("limit", String(params.limit));
@@ -355,6 +388,8 @@ export async function fetchLeaderboard(params?: {
 }
 
 export async function fetchMyRank(): Promise<UserRankResponse> {
+  const supabaseRank = await supabaseFetchMyRank();
+  if (supabaseRank) return supabaseRank;
   const data = await apiFetch<{
     rank: number;
     xp: number;
@@ -379,6 +414,8 @@ export async function fetchMyRank(): Promise<UserRankResponse> {
 export async function fetchAllAchievements(): Promise<
   Achievement[]
 > {
+  const supabaseAch = await supabaseFetchAllAchievements();
+  if (supabaseAch) return supabaseAch;
   const data = await apiFetch<{
     achievements: Array<{
       slug: string;
@@ -407,6 +444,8 @@ export async function fetchAllAchievements(): Promise<
 }
 
 export async function fetchMyAchievements(): Promise<UserAchievementsResponse> {
+  const supabaseMyAch = await supabaseFetchMyAchievements();
+  if (supabaseMyAch) return supabaseMyAch;
   const data = await apiFetch<{
     achievements: Array<{
       slug: string;
@@ -863,6 +902,8 @@ export async function fetchAIConversation(conversationId: number) {
 export async function fetchProblemSubmissions(slug: string): Promise<
   import("./types").ProblemSubmission[]
 > {
+  const supabaseSubs = await supabaseFetchProblemSubmissions(slug);
+  if (supabaseSubs) return supabaseSubs;
   const data = await apiFetch<{
     submissions: Array<{
       id: number;
@@ -893,6 +934,8 @@ export async function fetchProblemSubmissions(slug: string): Promise<
 export async function fetchDiscussions(slug: string): Promise<
   import("./types").Discussion[]
 > {
+  const supabaseDisc = await supabaseFetchDiscussions(slug);
+  if (supabaseDisc) return supabaseDisc;
   const data = await apiFetch<{
     discussions: Array<{
       id: number;

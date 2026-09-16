@@ -31,7 +31,7 @@ def upgrade() -> None:
     )
 
     progressstatus_enum = sa.Enum("NOT_STARTED", "ATTEMPTED", "SOLVED", name="progressstatus")
-    progressstatus_enum.create(op.get_bind(), checkfirst=True)
+    # progressstatus_enum.create(op.get_bind(), checkfirst=True)
 
     op.create_table(
         "user_problem_progress",

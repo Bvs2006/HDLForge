@@ -1,5 +1,4 @@
-import os
-
+from pydantic import field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -28,8 +27,13 @@ class Settings(BaseSettings):
     HDL_WAVEFORM_RETENTION_HOURS: int = 24
     HDL_USE_DOCKER: bool = True
 
+    # Legacy local JWT (only used for the /auth/register+login flow)
     JWT_SECRET: str = "hdlforge-dev-secret-change-in-production"
     JWT_EXPIRY_HOURS: int = 72
+
+    SUPABASE_URL: str = ""
+    SUPABASE_SERVICE_ROLE_KEY: str = ""
+    SUPABASE_JWT_SECRET: str = ""
 
     AI_ENABLED: bool = False
     AI_PROVIDER: str = "openai"
@@ -40,40 +44,44 @@ class Settings(BaseSettings):
     AI_RATE_LIMIT_PER_HOUR: int = 30
     AI_RATE_LIMIT_PER_MINUTE: int = 5
 
-    model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
+    SIMULATOR: str = "icarus"
+
+    model_config = {
+        "env_file": ".env",
+        "env_file_encoding": "utf-8",
+        "env_ignore_empty": True,
+    }
+
+    @field_validator("DEBUG", mode="before")
+    @classmethod
+    def parse_debug(cls, v):
+        """Accept bool or truthy string values; treat non-boolean strings like
+        'release' as False so a system DEBUG env var doesn't break startup."""
+        if isinstance(v, bool):
+            return v
+        if isinstance(v, str):
+            return v.lower() in ("1", "true", "yes", "on")
+        return bool(v)
 
     def get_database_url(self) -> str:
         """Return the database URL.
 
-        The original implementation always constructed a PostgreSQL URL when
-        ``DATABASE_URL`` was empty, which caused a ``500`` error in environments
-        where PostgreSQL is not available (e.g., local development and CI).
-        We now fall back to an SQLite file database when the required
-        PostgreSQL connection details are not configured. This ensures the
-        application starts correctly and the authenticated submission endpoint
-        works without requiring an external database.
+        Priority:
+        1. Explicit DATABASE_URL env var (Supabase connection string)
+        2. Constructed PostgreSQL URL from individual POSTGRES_* vars
+        Never falls back to SQLite.
         """
-        # Prefer an explicitly provided DATABASE_URL.
         if self.DATABASE_URL:
             return self.DATABASE_URL
-        # If any of the required PostgreSQL settings are missing, fall back to
-        # SQLite. This protects against accidental ``500`` responses when the
-        # dev environment has no PostgreSQL instance.
-        required_pg = all([
-            self.POSTGRES_USER,
-            self.POSTGRES_PASSWORD,
-            self.POSTGRES_HOST,
-            self.POSTGRES_DB,
-        ])
-        if required_pg and self.POSTGRES_HOST not in ["", "localhost"]:
-            # Assume a real Postgres server is intended.
-            return (
-                f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
-                f"@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+        if not self.POSTGRES_HOST:
+            raise RuntimeError(
+                "DATABASE_URL or POSTGRES_HOST must be set. "
+                "SQLite is not supported in this application."
             )
-        # Default to a local SQLite file for development/testing.
-        return "sqlite:///./dev.db"
-
+        return (
+            f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
+            f"@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+        )
 
 
 settings = Settings()

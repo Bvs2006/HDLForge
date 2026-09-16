@@ -25,8 +25,8 @@ def upgrade() -> None:
         "INVALID_SUBMISSION", "JUDGE_ERROR", "SYSTEM_ERROR",
         name="submissionstatus",
     )
-    test_visibility_enum.create(op.get_bind(), checkfirst=True)
-    submission_status_enum.create(op.get_bind(), checkfirst=True)
+    # test_visibility_enum.create(op.get_bind(), checkfirst=True)
+    # submission_status_enum.create(op.get_bind(), checkfirst=True)
 
     op.create_table(
         "test_cases",

@@ -99,7 +99,7 @@ export interface SubmissionRequest {
 }
 
 export interface User {
-  id: number;
+  id: string | number;
   email: string;
   username: string;
   displayName: string | null;

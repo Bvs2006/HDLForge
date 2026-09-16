@@ -217,7 +217,8 @@ class TestSubmissionEndpoints:
         )
         assert response.status_code == 422
 
-    def test_submit_solution_problem_not_found(self, client):
+    def test_submit_solution_requires_auth(self, client):
+        """POST /submit must return 401 when no token is provided."""
         response = client.post(
             "/api/submissions/submit",
             json={
@@ -226,6 +227,4 @@ class TestSubmissionEndpoints:
                 "code": "module test; endmodule",
             },
         )
-        assert response.status_code == 200
-        data = response.json()
-        assert data["status"] == "error"
+        assert response.status_code == 401

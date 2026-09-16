@@ -1,45 +1,51 @@
-from fastapi import APIRouter, Cookie, Depends, HTTPException, Response
+from fastapi import APIRouter, Cookie, Depends, Header, HTTPException, Response
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
-from app.db.models import User
+from app.db.models import Profile
 from app.schemas.auth import AuthResponse, LoginRequest, RegisterRequest, UserResponse
 from app.services import auth_service
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
+def _extract_token(
+    authorization: str | None = Header(None),
+    access_token: str | None = Cookie(None, alias="access_token"),
+) -> str | None:
+    if authorization and authorization.startswith("Bearer "):
+        return authorization[7:].strip()
+    return access_token
+
+
 def get_current_user(
-    token: str | None = Cookie(None, alias="access_token"),
+    authorization: str | None = Header(None),
+    access_token: str | None = Cookie(None, alias="access_token"),
     db: Session = Depends(get_db),
-) -> User | None:
+) -> Profile | None:
+    token = _extract_token(authorization, access_token)
     if not token:
         return None
-    user_id = auth_service.decode_access_token(token)
-    if not user_id:
-        return None
-    return auth_service.get_user_by_id(db, user_id)
+    return auth_service.get_user_from_token(db, token)
 
 
 def require_user(
-    token: str | None = Cookie(None, alias="access_token"),
+    authorization: str | None = Header(None),
+    access_token: str | None = Cookie(None, alias="access_token"),
     db: Session = Depends(get_db),
-) -> User:
+) -> Profile:
+    token = _extract_token(authorization, access_token)
     if not token:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    user_id = auth_service.decode_access_token(token)
-    if not user_id:
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
-    user = auth_service.get_user_by_id(db, user_id)
+    user = auth_service.get_user_from_token(db, token)
     if not user:
-        raise HTTPException(status_code=401, detail="User not found")
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
     return user
 
 
-def _user_response(user: User) -> UserResponse:
+def _user_response(user: Profile) -> UserResponse:
     return UserResponse(
-        id=user.id,
-        email=user.email,
+        id=str(user.id),
         username=user.username,
         display_name=user.display_name,
         avatar_url=user.avatar_url,
@@ -50,6 +56,7 @@ def _user_response(user: User) -> UserResponse:
 
 @router.post("/register", response_model=AuthResponse)
 def register(request: RegisterRequest, response: Response, db: Session = Depends(get_db)):
+    """Local register — used only in unit tests with in-memory SQLite DB."""
     if auth_service.get_user_by_email(db, request.email):
         raise HTTPException(status_code=409, detail="Email already registered")
     if auth_service.get_user_by_username(db, request.username):
@@ -75,6 +82,7 @@ def register(request: RegisterRequest, response: Response, db: Session = Depends
 
 @router.post("/login", response_model=AuthResponse)
 def login(request: LoginRequest, response: Response, db: Session = Depends(get_db)):
+    """Local login — used only in unit tests with in-memory SQLite DB."""
     user = auth_service.authenticate_user(db, request.email, request.password)
     if not user:
         raise HTTPException(status_code=401, detail="Invalid email or password")
@@ -97,5 +105,5 @@ def logout(response: Response):
 
 
 @router.get("/me", response_model=UserResponse)
-def get_me(user: User = Depends(require_user)):
+def get_me(user: Profile = Depends(require_user)):
     return _user_response(user)

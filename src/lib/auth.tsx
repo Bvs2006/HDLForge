@@ -1,7 +1,8 @@
-"use client";
+﻿"use client";
 
 import { createContext, useCallback, useContext, useEffect, useState, ReactNode } from "react";
 import { User } from "./types";
+import { createClient } from "./supabase/client";
 
 interface AuthContextType {
   user: User | null;
@@ -9,114 +10,155 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, username: string, password: string, displayName?: string) => Promise<void>;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const supabase = createClient();
 
-  const fetchUser = useCallback(async () => {
-    try {
-      const res = await fetch(`${API_BASE}/api/auth/me`, {
-        credentials: "include",
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setUser({
-          id: data.id,
-          email: data.email,
-          username: data.username,
-          displayName: data.display_name,
-          avatarUrl: data.avatar_url,
-          createdAt: data.created_at,
-          lastLoginAt: data.last_login_at,
-          xp: data.xp ?? 0,
-          level: data.level ?? 1,
-          solvedCount: data.solved_count ?? 0,
-        });
-      }
-    } catch {
-      // Not authenticated
-    } finally {
-      setLoading(false);
+  const loadUserProfile = useCallback(async (authUser: { id: string; email?: string; created_at: string; last_sign_in_at?: string; user_metadata?: Record<string, unknown> } | null) => {
+    if (!authUser) {
+      setUser(null);
+      return;
     }
-  }, []);
+
+    try {
+      const { data: profile, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", authUser.id)
+        .maybeSingle();
+
+      if (error && error.code !== "PGRST116") {
+        console.warn("Could not load user profile:", error.message);
+      }
+
+      const metadata = authUser.user_metadata || {};
+      const username = profile?.username || (metadata.username as string) || authUser.email?.split("@")[0] || "User";
+      const displayName = profile?.display_name || (metadata.display_name as string) || (metadata.username as string) || null;
+
+      setUser({
+        id: authUser.id,
+        email: authUser.email || "",
+        username,
+        displayName,
+        avatarUrl: profile?.avatar_url || null,
+        createdAt: profile?.created_at || authUser.created_at,
+        lastLoginAt: profile?.last_login_at || authUser.last_sign_in_at || null,
+        xp: profile?.xp ?? 0,
+        level: profile?.level ?? 1,
+        solvedCount: profile?.solved_count ?? 0,
+      });
+    } catch (err) {
+      console.warn("Failed to fetch profile:", err);
+      // Fallback to basic auth metadata
+      const metadata = authUser.user_metadata || {};
+      setUser({
+        id: authUser.id,
+        email: authUser.email || "",
+        username: (metadata.username as string) || authUser.email?.split("@")[0] || "User",
+        displayName: (metadata.display_name as string) || null,
+        avatarUrl: null,
+        createdAt: authUser.created_at,
+        lastLoginAt: authUser.last_sign_in_at || null,
+        xp: 0,
+        level: 1,
+        solvedCount: 0,
+      });
+    }
+  }, [supabase]);
+
+  const refreshUser = useCallback(async () => {
+    try {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      await loadUserProfile(authUser);
+    } catch {
+      setUser(null);
+    }
+  }, [supabase, loadUserProfile]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    void fetchUser();
-  }, [fetchUser]);
+    let mounted = true;
+
+    async function initAuth() {
+      try {
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (mounted) {
+          await loadUserProfile(authUser);
+        }
+      } catch (err) {
+        console.warn("Auth initialization error:", err);
+        if (mounted) setUser(null);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    }
+
+    void initAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (!mounted) return;
+      if (session?.user) {
+        await loadUserProfile(session.user);
+      } else {
+        setUser(null);
+      }
+      setLoading(false);
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, [supabase, loadUserProfile]);
 
   const login = useCallback(async (email: string, password: string) => {
-    const res = await fetch(`${API_BASE}/api/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ email, password }),
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
     });
 
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      throw new Error(data.detail || "Login failed");
+    if (error) {
+      throw new Error(error.message || "Invalid email or password");
     }
 
-    const data = await res.json();
-    setUser({
-      id: data.user.id,
-      email: data.user.email,
-      username: data.user.username,
-      displayName: data.user.display_name,
-      avatarUrl: data.user.avatar_url,
-      createdAt: data.user.created_at,
-      lastLoginAt: data.user.last_login_at,
-      xp: data.user.xp ?? 0,
-      level: data.user.level ?? 1,
-      solvedCount: data.user.solved_count ?? 0,
-    });
-  }, []);
+    if (data.user) {
+      await loadUserProfile(data.user);
+    }
+  }, [supabase, loadUserProfile]);
 
   const register = useCallback(async (email: string, username: string, password: string, displayName?: string) => {
-    const res = await fetch(`${API_BASE}/api/auth/register`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ email, username, password, display_name: displayName }),
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          username,
+          display_name: displayName || username,
+        },
+      },
     });
 
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      throw new Error(data.detail || "Registration failed");
+    if (error) {
+      throw new Error(error.message || "Registration failed");
     }
 
-    const data = await res.json();
-    setUser({
-      id: data.user.id,
-      email: data.user.email,
-      username: data.user.username,
-      displayName: data.user.display_name,
-      avatarUrl: data.user.avatar_url,
-      createdAt: data.user.created_at,
-      lastLoginAt: data.user.last_login_at,
-      xp: data.user.xp ?? 0,
-      level: data.user.level ?? 1,
-      solvedCount: data.user.solved_count ?? 0,
-    });
-  }, []);
+    if (data.user) {
+      await loadUserProfile(data.user);
+    }
+  }, [supabase, loadUserProfile]);
 
   const logout = useCallback(async () => {
-    await fetch(`${API_BASE}/api/auth/logout`, {
-      method: "POST",
-      credentials: "include",
-    });
+    await supabase.auth.signOut();
     setUser(null);
-  }, []);
+  }, [supabase]);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

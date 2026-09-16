@@ -21,7 +21,7 @@ from app.db.models import (
     Quiz,
     QuizAttempt,
     QuizQuestion,
-    User,
+    Profile,
     UserConceptProgress,
     UserProblemProgress,
     ProgressStatus,
@@ -43,7 +43,7 @@ MASTERY_MIN = 0.0
 PASSING_THRESHOLD = 0.7
 
 
-def get_lesson_status(db: Session, lesson: Lesson, user_id: int | None) -> str:
+def get_lesson_status(db: Session, lesson: Lesson, user_id: str | None) -> str:
     if not user_id:
         return "NOT_STARTED"
     progress = (
@@ -56,7 +56,7 @@ def get_lesson_status(db: Session, lesson: Lesson, user_id: int | None) -> str:
     return progress.status.value
 
 
-def are_prerequisites_met(db: Session, lesson: Lesson, user_id: int) -> bool:
+def are_prerequisites_met(db: Session, lesson: Lesson, user_id: str) -> bool:
     prereqs = (
         db.query(LessonPrerequisite)
         .filter(LessonPrerequisite.lesson_id == lesson.id)
@@ -80,7 +80,7 @@ def are_prerequisites_met(db: Session, lesson: Lesson, user_id: int) -> bool:
     return True
 
 
-def start_lesson(db: Session, user_id: int, lesson_id: int) -> LessonProgress:
+def start_lesson(db: Session, user_id: str, lesson_id: int) -> LessonProgress:
     existing = (
         db.query(LessonProgress)
         .filter(LessonProgress.user_id == user_id, LessonProgress.lesson_id == lesson_id)
@@ -111,7 +111,7 @@ def start_lesson(db: Session, user_id: int, lesson_id: int) -> LessonProgress:
     return progress
 
 
-def complete_lesson(db: Session, user_id: int, lesson_id: int) -> tuple[int, list[str]]:
+def complete_lesson(db: Session, user_id: str, lesson_id: int) -> tuple[int, list[str]]:
     progress = (
         db.query(LessonProgress)
         .filter(LessonProgress.user_id == user_id, LessonProgress.lesson_id == lesson_id)
@@ -129,7 +129,7 @@ def complete_lesson(db: Session, user_id: int, lesson_id: int) -> tuple[int, lis
         progress.completed_at = datetime.now(timezone.utc)
         xp_earned = LESSON_XP
 
-        user = db.query(User).filter(User.id == user_id).first()
+        user = db.query(Profile).filter(Profile.id == user_id).first()
         if user:
             user.xp += xp_earned
             from app.services.achievement_service import calculate_level
@@ -144,7 +144,7 @@ def complete_lesson(db: Session, user_id: int, lesson_id: int) -> tuple[int, lis
 
 
 def submit_quiz(
-    db: Session, user_id: int, quiz_id: int, answers: list[str]
+    db: Session, user_id: str, quiz_id: int, answers: list[str]
 ) -> tuple[float, bool, list[dict]]:
     quiz = db.query(Quiz).filter(Quiz.id == quiz_id).first()
     if not quiz:
@@ -187,7 +187,7 @@ def submit_quiz(
     db.add(attempt)
 
     if passed:
-        user = db.query(User).filter(User.id == user_id).first()
+        user = db.query(Profile).filter(Profile.id == user_id).first()
         if user:
             user.xp += QUIZ_PASS_XP
             from app.services.achievement_service import calculate_level
@@ -200,7 +200,7 @@ def submit_quiz(
 
 
 def update_concept_mastery_on_solve(
-    db: Session, user_id: int, problem_id: int, solved: bool
+    db: Session, user_id: str, problem_id: int, solved: bool
 ) -> None:
     concept_links = (
         db.query(ProblemConcept)
@@ -240,7 +240,7 @@ def update_concept_mastery_on_solve(
 
 
 def _update_concept_mastery_on_lesson(
-    db: Session, user_id: int, lesson_id: int, completed: bool
+    db: Session, user_id: str, lesson_id: int, completed: bool
 ) -> None:
     lesson = db.query(Lesson).filter(Lesson.id == lesson_id).first()
     if not lesson:
@@ -282,7 +282,7 @@ def _update_concept_mastery_on_lesson(
 
 
 def _update_concept_mastery_on_quiz(
-    db: Session, user_id: int, lesson_id: int, passed: bool
+    db: Session, user_id: str, lesson_id: int, passed: bool
 ) -> None:
     lesson = db.query(Lesson).filter(Lesson.id == lesson_id).first()
     if not lesson:
@@ -330,7 +330,7 @@ def _get_module_concept_slugs(db: Session, module_slug: str) -> list[str]:
     return mapping.get(module_slug, [])
 
 
-def get_learning_progress(db: Session, user_id: int) -> dict:
+def get_learning_progress(db: Session, user_id: str) -> dict:
     paths = db.query(LearningPath).filter(LearningPath.published == True).all()
 
     result = []
@@ -411,7 +411,7 @@ def get_learning_progress(db: Session, user_id: int) -> dict:
     }
 
 
-def get_recommendations(db: Session, user_id: int) -> dict:
+def get_recommendations(db: Session, user_id: str) -> dict:
     paths = db.query(LearningPath).filter(LearningPath.published == True).all()
 
     next_lesson = None
@@ -546,7 +546,7 @@ def get_recommendations(db: Session, user_id: int) -> dict:
     }
 
 
-def get_concept_mastery(db: Session, user_id: int) -> list[dict]:
+def get_concept_mastery(db: Session, user_id: str) -> list[dict]:
     concepts = db.query(Concept).order_by(Concept.category, Concept.name).all()
 
     result = []

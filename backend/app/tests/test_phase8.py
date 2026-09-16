@@ -1,6 +1,7 @@
 """Tests for Phase 8: Learning system."""
 
 import json
+import uuid
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -20,10 +21,10 @@ from app.db.models import (
     ProblemConcept,
     Quiz,
     QuizQuestion,
-    User,
+    Profile,
 )
 from app.main import app
-from app.services.auth_service import create_access_token, hash_password
+from app.services.auth_service import create_access_token
 from app.services.learning_service import (
     are_prerequisites_met,
     complete_lesson,
@@ -74,11 +75,10 @@ def client(db_engine):
 
 @pytest.fixture
 def test_user(db_session):
-    user = User(
-        email="test@example.com",
+    user = Profile(
+        id=str(uuid.uuid5(uuid.NAMESPACE_DNS, "testuser")),
         username="testuser",
-        password_hash=hash_password("password123"),
-        display_name="Test User",
+        display_name="Test Profile",
     )
     db_session.add(user)
     db_session.commit()
@@ -201,20 +201,20 @@ def curriculum(db_session):
 class TestLearningPathsEndpoint:
     def test_list_paths_empty(self, client):
         resp = client.get("/api/learning/paths")
-        assert resp.status_code == 200
+        assert resp.status_code == 200, resp.text
         data = resp.json()
         assert data["paths"] == []
 
     def test_list_paths_with_data(self, client, curriculum):
         resp = client.get("/api/learning/paths")
-        assert resp.status_code == 200
+        assert resp.status_code == 200, resp.text
         data = resp.json()
         assert len(data["paths"]) == 1
         assert data["paths"][0]["slug"] == "test-path"
 
     def test_get_path_detail(self, client, curriculum):
         resp = client.get("/api/learning/paths/test-path")
-        assert resp.status_code == 200
+        assert resp.status_code == 200, resp.text
         data = resp.json()
         assert data["title"] == "Test Path"
         assert len(data["modules"]) == 1
@@ -228,7 +228,7 @@ class TestLearningPathsEndpoint:
 class TestLessonEndpoint:
     def test_get_lesson(self, client, curriculum):
         resp = client.get("/api/learning/lessons/lesson-1")
-        assert resp.status_code == 200
+        assert resp.status_code == 200, resp.text
         data = resp.json()
         assert data["title"] == "Lesson 1"
         assert data["content"] == "Lesson 1 content"
@@ -240,7 +240,7 @@ class TestLessonEndpoint:
 
     def test_get_lesson_with_prerequisites(self, client, curriculum):
         resp = client.get("/api/learning/lessons/lesson-3")
-        assert resp.status_code == 200
+        assert resp.status_code == 200, resp.text
         data = resp.json()
         assert len(data["prerequisites"]) == 1
         assert data["prerequisites"][0]["slug"] == "lesson-1"
@@ -249,7 +249,7 @@ class TestLessonEndpoint:
 class TestLessonProgress:
     def test_start_lesson(self, client, curriculum, auth_headers):
         resp = client.post("/api/learning/lessons/lesson-1/start", headers=auth_headers)
-        assert resp.status_code == 200
+        assert resp.status_code == 200, resp.text
         data = resp.json()
         assert data["status"] == "IN_PROGRESS"
 
@@ -260,7 +260,7 @@ class TestLessonProgress:
     def test_complete_lesson(self, client, curriculum, auth_headers, test_user):
         client.post("/api/learning/lessons/lesson-1/start", headers=auth_headers)
         resp = client.post("/api/learning/lessons/lesson-1/complete", headers=auth_headers)
-        assert resp.status_code == 200
+        assert resp.status_code == 200, resp.text
         data = resp.json()
         assert data["xp_earned"] == 5
 
@@ -290,7 +290,7 @@ class TestPrerequisites:
 class TestQuizEndpoint:
     def test_get_quiz(self, client, curriculum):
         resp = client.get("/api/learning/quizzes/lesson-1")
-        assert resp.status_code == 200
+        assert resp.status_code == 200, resp.text
         data = resp.json()
         assert len(data["questions"]) == 2
 
@@ -307,7 +307,7 @@ class TestQuizEndpoint:
             json={"answers": ["2", "4"]},
             headers=auth_headers,
         )
-        assert resp.status_code == 200
+        assert resp.status_code == 200, resp.text
         data = resp.json()
         assert data["score"] == 100.0
         assert data["passed"] is True
@@ -322,7 +322,7 @@ class TestQuizEndpoint:
             json={"answers": ["1", "3"]},
             headers=auth_headers,
         )
-        assert resp.status_code == 200
+        assert resp.status_code == 200, resp.text
         data = resp.json()
         assert data["score"] == 0.0
         assert data["passed"] is False
@@ -337,7 +337,7 @@ class TestQuizEndpoint:
             json={"answers": ["2", "3"]},
             headers=auth_headers,
         )
-        assert resp.status_code == 200
+        assert resp.status_code == 200, resp.text
         data = resp.json()
         assert data["score"] == 50.0
         assert data["passed"] is False
@@ -346,7 +346,7 @@ class TestQuizEndpoint:
 class TestLearningProgress:
     def test_get_progress(self, client, curriculum, auth_headers):
         resp = client.get("/api/learning/progress", headers=auth_headers)
-        assert resp.status_code == 200
+        assert resp.status_code == 200, resp.text
         data = resp.json()
         assert data["total_lessons"] == 3
         assert data["completed_lessons"] == 0
@@ -363,13 +363,13 @@ class TestLearningProgress:
 class TestConceptMastery:
     def test_concept_mastery_empty(self, client, curriculum, auth_headers):
         resp = client.get("/api/learning/concepts/mastery", headers=auth_headers)
-        assert resp.status_code == 200
+        assert resp.status_code == 200, resp.text
         data = resp.json()
         assert len(data["concepts"]) > 0
 
     def test_list_concepts(self, client, curriculum):
         resp = client.get("/api/learning/concepts")
-        assert resp.status_code == 200
+        assert resp.status_code == 200, resp.text
         data = resp.json()
         assert len(data["concepts"]) >= 1
 
@@ -377,7 +377,7 @@ class TestConceptMastery:
 class TestRecommendations:
     def test_recommendations(self, client, curriculum, auth_headers):
         resp = client.get("/api/learning/recommendations", headers=auth_headers)
-        assert resp.status_code == 200
+        assert resp.status_code == 200, resp.text
         data = resp.json()
         assert data["next_lesson"] is not None
         assert data["reason"] != ""
@@ -386,6 +386,6 @@ class TestRecommendations:
 class TestRelatedProblems:
     def test_related_problems(self, client, curriculum):
         resp = client.get("/api/learning/practice/lesson-1")
-        assert resp.status_code == 200
+        assert resp.status_code == 200, resp.text
         data = resp.json()
         assert isinstance(data["problems"], list)

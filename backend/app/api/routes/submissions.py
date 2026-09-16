@@ -1,34 +1,75 @@
-from fastapi import APIRouter, Cookie, Depends, HTTPException
+from fastapi import APIRouter, Cookie, Depends, Header, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
-from app.db.models import Discussion, DiscussionVote, Problem, Submission, SubmissionTestResult, User
+from app.db.models import Discussion, DiscussionVote, Problem, Submission, SubmissionTestResult, Profile
 from app.schemas.submission import SubmissionRequest, SubmissionResponse, TestResult
 from app.services import submission_service
-from app.services.auth_service import decode_access_token, get_user_by_id
+from app.services import auth_service
 
 router = APIRouter(prefix="/submissions", tags=["submissions"])
 
 
+def _extract_bearer_token(
+    authorization: str | None = Header(None),
+    access_token: str | None = Cookie(None, alias="access_token"),
+) -> str | None:
+    """Extract raw token string from Authorization header or cookie."""
+    if authorization and authorization.startswith("Bearer "):
+        return authorization[7:].strip()
+    return access_token
+
+
 def get_optional_user(
+    authorization: str | None = Header(None),
     access_token: str | None = Cookie(None, alias="access_token"),
     db: Session = Depends(get_db),
-) -> User | None:
-    if not access_token:
+) -> Profile | None:
+    token = _extract_bearer_token(authorization, access_token)
+    if not token:
         return None
-    user_id = decode_access_token(access_token)
-    if not user_id:
-        return None
-    return get_user_by_id(db, user_id)
+    return auth_service.get_user_from_token(db, token)
+
+
+def require_authenticated_user(
+    authorization: str | None = Header(None),
+    access_token: str | None = Cookie(None, alias="access_token"),
+    db: Session = Depends(get_db),
+) -> Profile:
+    """Dependency that enforces authentication.
+
+    - No Authorization header / cookie → 401
+    - Invalid, expired, or malformed token → 401
+    - Valid token but no matching profile → 401
+    - user_id is ALWAYS derived from the verified JWT sub claim, never from request body.
+    """
+    token = _extract_bearer_token(authorization, access_token)
+    if not token:
+        raise HTTPException(status_code=401, detail="Authentication required.")
+
+    # verify_supabase_jwt raises 401 on any failure; get_user_from_token wraps it
+    user = auth_service.get_user_from_token(db, token)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid or expired token.")
+    return user
 
 
 @router.post("/run", response_model=SubmissionResponse)
 def run_submission(
     request: SubmissionRequest,
     db: Session = Depends(get_db),
-    user: User | None = Depends(get_optional_user),
+    user: Profile | None = Depends(get_optional_user),
 ) -> SubmissionResponse:
+    """/run is anonymous-capable ONLY because:
+    - execution runs exclusively inside the Docker sandbox
+    - strict CPU/time/memory/process limits are enforced by ExecutionLimits
+    - no database submission record is created for anonymous runs
+    - no hidden test cases are exposed (judge_run uses PUBLIC tests only)
+
+    PRODUCTION NOTE: rate limiting / abuse protection must be added at the
+    reverse-proxy or API-gateway layer before public deployment.
+    """
     return submission_service.run_submission(db, request, user_id=user.id if user else None)
 
 
@@ -36,16 +77,29 @@ def run_submission(
 def submit_solution(
     request: SubmissionRequest,
     db: Session = Depends(get_db),
-    user: User | None = Depends(get_optional_user),
+    user: Profile = Depends(require_authenticated_user),
 ) -> SubmissionResponse:
-    return submission_service.submit_solution(db, request, user_id=user.id if user else None)
+    """/submit requires a verified authenticated user.
+
+    user_id is derived exclusively from the verified JWT sub claim.
+    It is NEVER accepted from the request body.
+    """
+    return submission_service.submit_solution(db, request, user_id=user.id)
 
 
 @router.get("/{submission_id}", response_model=SubmissionResponse)
-def get_submission(submission_id: int, db: Session = Depends(get_db)):
+def get_submission(
+    submission_id: int,
+    db: Session = Depends(get_db),
+    user: Profile = Depends(require_authenticated_user),
+):
+    """Return a submission. Users may only access their own submissions."""
     submission = db.query(Submission).filter(Submission.id == submission_id).first()
     if not submission:
         raise HTTPException(status_code=404, detail=f"Submission '{submission_id}' not found")
+
+    if submission.user_id != user.id:
+        raise HTTPException(status_code=403, detail="Access denied.")
 
     test_results = (
         db.query(SubmissionTestResult)
@@ -81,14 +135,12 @@ def get_submission(submission_id: int, db: Session = Depends(get_db)):
 def get_problem_submissions(
     problem_slug: str,
     db: Session = Depends(get_db),
-    user: User | None = Depends(get_optional_user),
+    user: Profile = Depends(require_authenticated_user),
 ):
+    """Return the authenticated user's own submissions for a problem only."""
     problem = db.query(Problem).filter(Problem.slug == problem_slug).first()
     if not problem:
         raise HTTPException(status_code=404, detail=f"Problem '{problem_slug}' not found")
-
-    if not user:
-        return {"submissions": []}
 
     submissions = (
         db.query(Submission)
@@ -139,7 +191,7 @@ def get_discussions(problem_slug: str, db: Session = Depends(get_db)):
 
     result = []
     for d in discussions:
-        user = db.query(User).filter(User.id == d.user_id).first()
+        d_user = db.query(Profile).filter(Profile.id == d.user_id).first()
         replies = (
             db.query(Discussion)
             .filter(Discussion.parent_id == d.id)
@@ -148,7 +200,7 @@ def get_discussions(problem_slug: str, db: Session = Depends(get_db)):
         )
         reply_list = []
         for r in replies:
-            r_user = db.query(User).filter(User.id == r.user_id).first()
+            r_user = db.query(Profile).filter(Profile.id == r.user_id).first()
             reply_list.append({
                 "id": r.id,
                 "content": r.content,
@@ -161,8 +213,8 @@ def get_discussions(problem_slug: str, db: Session = Depends(get_db)):
         result.append({
             "id": d.id,
             "content": d.content,
-            "username": user.username if user else "deleted",
-            "display_name": user.display_name if user else None,
+            "username": d_user.username if d_user else "deleted",
+            "display_name": d_user.display_name if d_user else None,
             "upvotes": d.upvotes,
             "is_solution": d.is_solution,
             "reply_count": len(replies),
@@ -178,11 +230,8 @@ def create_discussion(
     problem_slug: str,
     request: DiscussionCreate,
     db: Session = Depends(get_db),
-    user: User | None = Depends(get_optional_user),
+    user: Profile = Depends(require_authenticated_user),
 ):
-    if not user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-
     problem = db.query(Problem).filter(Problem.slug == problem_slug).first()
     if not problem:
         raise HTTPException(status_code=404, detail=f"Problem '{problem_slug}' not found")
@@ -205,11 +254,8 @@ def vote_discussion(
     discussion_id: int,
     request: DiscussionVoteRequest,
     db: Session = Depends(get_db),
-    user: User | None = Depends(get_optional_user),
+    user: Profile = Depends(require_authenticated_user),
 ):
-    if not user:
-        raise HTTPException(status_code=401, detail="Authentication required")
-
     discussion = db.query(Discussion).filter(Discussion.id == discussion_id).first()
     if not discussion:
         raise HTTPException(status_code=404, detail="Discussion not found")

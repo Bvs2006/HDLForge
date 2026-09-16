@@ -10,7 +10,7 @@ from app.db.models import (
     Difficulty,
     Language,
     Problem,
-    User,
+    Profile,
     Submission,
     SubmissionStatus,
     TestCase,

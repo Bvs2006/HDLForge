@@ -3,11 +3,12 @@ import re
 import time
 from dataclasses import dataclass, field
 
+from app.core.config import settings
 from app.execution.limits import ExecutionLimits
 from app.execution.workspace import ExecutionWorkspace
 from app.sandbox.docker import DockerSandbox
-from app.simulator.base import SimulationResult, SimulationStatus
-from app.simulator.verilator import VerilatorSimulator
+from app.simulator.base import HDLSimulator, SimulationResult, SimulationStatus
+from app.simulator import get_simulator
 from app.schemas.submission import (
     SubmissionResponse,
     TestResult,
@@ -45,7 +46,7 @@ class ExecutionRunner:
 
             workspace.write_testbench(testbench_code)
 
-            simulator = VerilatorSimulator(workspace=workspace, limits=job.limits)
+            simulator = get_simulator(settings.SIMULATOR, workspace=workspace, limits=job.limits)
 
             if self.use_docker and self.sandbox is not None:
                 result = self._execute_in_sandbox(workspace, job, simulator)
@@ -84,7 +85,7 @@ class ExecutionRunner:
         self,
         workspace: ExecutionWorkspace,
         job: ExecutionJob,
-        simulator: VerilatorSimulator,
+        simulator: HDLSimulator,
         trace_enabled: bool = False,
     ) -> SimulationResult:
         compile_result = simulator.compile(

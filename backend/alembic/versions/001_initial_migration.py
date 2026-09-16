@@ -19,8 +19,8 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     difficulty_enum = sa.Enum("EASY", "MEDIUM", "HARD", name="difficulty")
     language_enum = sa.Enum("VERILOG", "SYSTEMVERILOG", name="language")
-    difficulty_enum.create(op.get_bind(), checkfirst=True)
-    language_enum.create(op.get_bind(), checkfirst=True)
+    # difficulty_enum.create(op.get_bind(), checkfirst=True)
+    # language_enum.create(op.get_bind(), checkfirst=True)
 
     op.create_table(
         "problems",

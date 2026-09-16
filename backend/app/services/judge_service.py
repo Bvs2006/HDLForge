@@ -16,7 +16,7 @@ from app.db.models import (
     SubmissionTestResult,
     TestCase,
     TestVisibility,
-    User,
+    Profile,
     UserProblemProgress,
 )
 from app.execution.runner import ExecutionJob, ExecutionRunner
@@ -56,7 +56,7 @@ class JudgeService:
         self,
         db: Session,
         request: SubmissionRequest,
-        user_id: int | None = None,
+        user_id: str | None = None,
     ) -> SubmissionResponse:
         """Execute PUBLIC tests only (for Run button)."""
         problem = db.query(Problem).filter(Problem.slug == request.problem_slug).first()
@@ -80,7 +80,7 @@ class JudgeService:
                     id=0,
                     problem_id=problem.id,
                     name="Custom Testbench",
-                    description="User provided testbench",
+                    description="Profile provided testbench",
                     testbench=request.testbench_code,
                     visibility=TestVisibility.PUBLIC,
                     weight=1.0,
@@ -109,7 +109,7 @@ class JudgeService:
         self,
         db: Session,
         request: SubmissionRequest,
-        user_id: int | None = None,
+        user_id: str | None = None,
     ) -> SubmissionResponse:
         """Execute ALL tests (PUBLIC + HIDDEN) for final judging."""
         problem = db.query(Problem).filter(Problem.slug == request.problem_slug).first()
@@ -150,7 +150,7 @@ class JudgeService:
         request: SubmissionRequest,
         test_cases: list[TestCase],
         is_submit: bool,
-        user_id: int | None = None,
+        user_id: str | None = None,
     ) -> SubmissionResponse:
         start_time = time.time()
         total_weight = sum(tc.weight for tc in test_cases)
@@ -313,7 +313,7 @@ class JudgeService:
         submitted_by = None
         submitted_by_display = None
         if user_id:
-            user_obj = db.query(User).filter(User.id == user_id).first()
+            user_obj = db.query(Profile).filter(Profile.id == user_id).first()
             if user_obj:
                 submitted_by = user_obj.username
                 submitted_by_display = user_obj.display_name
@@ -341,13 +341,13 @@ class JudgeService:
     def _update_user_progress(
         self,
         db: Session,
-        user_id: int,
+        user_id: str,
         problem: Problem,
         final_status: str,
         score: int,
     ) -> tuple[int, int, int, str | None, list[AchievementInfo]]:
         """Update user progress after submission. Returns (xp_earned, xp_total, level, progress_status, achievements)."""
-        user = db.query(User).filter(User.id == user_id).first()
+        user = db.query(Profile).filter(Profile.id == user_id).first()
         if not user:
             return 0, 0, 1, None, []
 

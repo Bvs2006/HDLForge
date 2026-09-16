@@ -4,7 +4,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
-from app.db.models import Problem, User, UserAchievement, UserProblemProgress, ProgressStatus
+from app.db.models import Problem, Profile, UserAchievement, UserProblemProgress, ProgressStatus
 from app.api.routes.auth import require_user
 from app.services.achievement_service import calculate_streak, get_user_rank
 
@@ -13,7 +13,7 @@ router = APIRouter(prefix="/leaderboard", tags=["leaderboard"])
 
 class LeaderboardEntry(BaseModel):
     rank: int
-    user_id: int
+    user_id: str
     username: str
     display_name: str | None
     xp: int
@@ -51,19 +51,19 @@ def get_leaderboard(
 ):
     total_problems = db.query(func.count(Problem.id)).scalar() or 1
 
-    query = db.query(User)
+    query = db.query(Profile)
 
     if search:
         search_term = f"%{search}%"
         query = query.filter(
-            (User.username.ilike(search_term)) | (User.display_name.ilike(search_term))
+            (Profile.username.ilike(search_term)) | (Profile.display_name.ilike(search_term))
         )
 
     total_users = query.count()
 
     entries = (
         query
-        .order_by(User.xp.desc(), User.solved_count.desc(), User.created_at.asc())
+        .order_by(Profile.xp.desc(), Profile.solved_count.desc(), Profile.created_at.asc())
         .offset((page - 1) * limit)
         .limit(limit)
         .all()
@@ -105,7 +105,7 @@ def get_leaderboard(
 
 @router.get("/me", response_model=CurrentUserRankResponse)
 def get_my_rank(
-    user: User = Depends(require_user),
+    user: Profile = Depends(require_user),
     db: Session = Depends(get_db),
 ):
     rank = get_user_rank(db, user.id)

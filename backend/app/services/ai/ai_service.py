@@ -25,7 +25,7 @@ def _get_provider() -> AIProvider:
     return OpenAIProvider()
 
 
-def _check_rate_limit(user_id: int) -> bool:
+def _check_rate_limit(user_id: str) -> bool:
     now = time.time()
     hour_cutoff = now - 3600
     minute_cutoff = now - 60
@@ -40,7 +40,7 @@ def _check_rate_limit(user_id: int) -> bool:
     return True
 
 
-def _record_usage(user_id: int) -> None:
+def _record_usage(user_id: str) -> None:
     now = time.time()
     _rate_limits[user_id].append(now)
     _minute_limits[user_id].append(now)
@@ -68,7 +68,7 @@ def _build_waveform_summary(waveform_data: dict) -> dict:
 
 async def handle_ai_request(
     db: Session,
-    user_id: int,
+    user_id: str,
     task: str,
     context: dict[str, Any],
 ) -> dict:
@@ -134,7 +134,7 @@ async def handle_ai_request(
 
 def save_conversation(
     db: Session,
-    user_id: int,
+    user_id: str,
     task: str,
     context: dict,
     response: str,

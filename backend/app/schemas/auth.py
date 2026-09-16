@@ -16,8 +16,7 @@ class LoginRequest(BaseModel):
 
 
 class UserResponse(BaseModel):
-    id: int
-    email: str
+    id: str
     username: str
     display_name: str | None
     avatar_url: str | None

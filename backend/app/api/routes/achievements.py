@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
-from app.db.models import Achievement, User, UserAchievement, UserProblemProgress, ProgressStatus, Problem
+from app.db.models import Achievement, Profile, UserAchievement, UserProblemProgress, ProgressStatus, Problem
 from app.api.routes.auth import get_current_user, require_user
 from app.services.achievement_service import calculate_streak
 
@@ -56,7 +56,7 @@ def list_achievements(db: Session = Depends(get_db)):
 
 @router.get("/me", response_model=UserAchievementsResponse)
 def get_my_achievements(
-    user: User = Depends(require_user),
+    user: Profile = Depends(require_user),
     db: Session = Depends(get_db),
 ):
     achievements = db.query(Achievement).order_by(Achievement.id).all()

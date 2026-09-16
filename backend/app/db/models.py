@@ -1,4 +1,5 @@
 import enum
+import uuid
 
 from sqlalchemy import DateTime, Enum, Float, ForeignKey, Integer, String, Text, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -103,7 +104,7 @@ class Submission(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     problem_id: Mapped[int] = mapped_column(ForeignKey("problems.id"), index=True)
-    user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True, index=True)
+    user_id: Mapped[str | None] = mapped_column(ForeignKey("profiles.id"), nullable=True, index=True)
     code: Mapped[str] = mapped_column(Text)
     language: Mapped[Language] = mapped_column(Enum(Language))
     status: Mapped[SubmissionStatus] = mapped_column(Enum(SubmissionStatus))
@@ -117,7 +118,7 @@ class Submission(Base):
     )
 
     problem: Mapped["Problem"] = relationship(back_populates="submissions")
-    user: Mapped["User | None"] = relationship()
+    user: Mapped["Profile | None"] = relationship()
     test_results: Mapped[list["SubmissionTestResult"]] = relationship(
         back_populates="submission", cascade="all, delete-orphan"
     )
@@ -170,13 +171,14 @@ class ProgressStatus(str, enum.Enum):
     SOLVED = "SOLVED"
 
 
-class User(Base):
-    __tablename__ = "users"
+class Profile(Base):
+    __tablename__ = "profiles"
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    # Columns that exist in the real Supabase public.profiles table.
+    # Do NOT add email or password_hash here — those are managed by
+    # Supabase Auth (auth.users) and do not exist in public.profiles.
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     username: Mapped[str] = mapped_column(String(50), unique=True, index=True)
-    password_hash: Mapped[str] = mapped_column(String(255))
     display_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
     avatar_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     xp: Mapped[int] = mapped_column(Integer, default=0, index=True)
@@ -214,8 +216,8 @@ class UserProblemProgress(Base):
         UniqueConstraint("user_id", "problem_id", name="uq_user_problem"),
     )
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("profiles.id"), index=True)
     problem_id: Mapped[int] = mapped_column(ForeignKey("problems.id"), index=True)
     status: Mapped[ProgressStatus] = mapped_column(
         Enum(ProgressStatus), default=ProgressStatus.NOT_STARTED
@@ -231,14 +233,14 @@ class UserProblemProgress(Base):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
 
-    user: Mapped["User"] = relationship(back_populates="progress")
+    user: Mapped["Profile"] = relationship(back_populates="progress")
     problem: Mapped["Problem"] = relationship()
 
 
 class Achievement(Base):
     __tablename__ = "achievements"
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
     slug: Mapped[str] = mapped_column(String(100), unique=True, index=True)
     name: Mapped[str] = mapped_column(String(200))
     description: Mapped[str] = mapped_column(Text)
@@ -257,14 +259,14 @@ class UserAchievement(Base):
         UniqueConstraint("user_id", "achievement_id", name="uq_user_achievement"),
     )
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("profiles.id"), index=True)
     achievement_id: Mapped[int] = mapped_column(ForeignKey("achievements.id"), index=True)
     unlocked_at: Mapped[str] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
 
-    user: Mapped["User"] = relationship(back_populates="achievements")
+    user: Mapped["Profile"] = relationship(back_populates="achievements")
     achievement: Mapped["Achievement"] = relationship()
 
 
@@ -277,7 +279,7 @@ class LessonProgressStatus(str, enum.Enum):
 class Concept(Base):
     __tablename__ = "concepts"
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
     slug: Mapped[str] = mapped_column(String(100), unique=True, index=True)
     name: Mapped[str] = mapped_column(String(200))
     description: Mapped[str] = mapped_column(Text, default="")
@@ -294,7 +296,7 @@ class ProblemConcept(Base):
         UniqueConstraint("problem_id", "concept_id", name="uq_problem_concept"),
     )
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
     problem_id: Mapped[int] = mapped_column(ForeignKey("problems.id"), index=True)
     concept_id: Mapped[int] = mapped_column(ForeignKey("concepts.id"), index=True)
 
@@ -305,7 +307,7 @@ class ProblemConcept(Base):
 class LearningPath(Base):
     __tablename__ = "learning_paths"
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
     slug: Mapped[str] = mapped_column(String(100), unique=True, index=True)
     title: Mapped[str] = mapped_column(String(200))
     description: Mapped[str] = mapped_column(Text, default="")
@@ -328,7 +330,7 @@ class LearningPath(Base):
 class LearningModule(Base):
     __tablename__ = "learning_modules"
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
     learning_path_id: Mapped[int] = mapped_column(ForeignKey("learning_paths.id"), index=True)
     slug: Mapped[str] = mapped_column(String(100), index=True)
     title: Mapped[str] = mapped_column(String(200))
@@ -345,7 +347,7 @@ class LearningModule(Base):
 class Lesson(Base):
     __tablename__ = "lessons"
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
     module_id: Mapped[int] = mapped_column(ForeignKey("learning_modules.id"), index=True)
     slug: Mapped[str] = mapped_column(String(100), index=True)
     title: Mapped[str] = mapped_column(String(200))
@@ -379,7 +381,7 @@ class LessonPrerequisite(Base):
         UniqueConstraint("lesson_id", "prerequisite_lesson_id", name="uq_lesson_prerequisite"),
     )
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
     lesson_id: Mapped[int] = mapped_column(ForeignKey("lessons.id"), index=True)
     prerequisite_lesson_id: Mapped[int] = mapped_column(ForeignKey("lessons.id"), index=True)
 
@@ -397,8 +399,8 @@ class LessonProgress(Base):
         UniqueConstraint("user_id", "lesson_id", name="uq_user_lesson"),
     )
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("profiles.id"), index=True)
     lesson_id: Mapped[int] = mapped_column(ForeignKey("lessons.id"), index=True)
     status: Mapped[LessonProgressStatus] = mapped_column(
         Enum(LessonProgressStatus), default=LessonProgressStatus.NOT_STARTED
@@ -407,14 +409,14 @@ class LessonProgress(Base):
     completed_at: Mapped[str | None] = mapped_column(DateTime(timezone=True), nullable=True)
     last_accessed_at: Mapped[str | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
-    user: Mapped["User"] = relationship()
+    user: Mapped["Profile"] = relationship()
     lesson: Mapped["Lesson"] = relationship(back_populates="progress")
 
 
 class Quiz(Base):
     __tablename__ = "quizzes"
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
     lesson_id: Mapped[int] = mapped_column(ForeignKey("lessons.id"), index=True)
     title: Mapped[str] = mapped_column(String(200), default="")
 
@@ -431,7 +433,7 @@ class Quiz(Base):
 class QuizQuestion(Base):
     __tablename__ = "quiz_questions"
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
     quiz_id: Mapped[int] = mapped_column(ForeignKey("quizzes.id"), index=True)
     question: Mapped[str] = mapped_column(Text)
     question_type: Mapped[str] = mapped_column(String(50), default="multiple_choice")
@@ -446,8 +448,8 @@ class QuizQuestion(Base):
 class QuizAttempt(Base):
     __tablename__ = "quiz_attempts"
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("profiles.id"), index=True)
     quiz_id: Mapped[int] = mapped_column(ForeignKey("quizzes.id"), index=True)
     score: Mapped[float] = mapped_column(Float, default=0.0)
     passed: Mapped[bool] = mapped_column(default=False)
@@ -456,7 +458,7 @@ class QuizAttempt(Base):
         DateTime(timezone=True), server_default=func.now()
     )
 
-    user: Mapped["User"] = relationship()
+    user: Mapped["Profile"] = relationship()
     quiz: Mapped["Quiz"] = relationship(back_populates="attempts")
 
 
@@ -466,23 +468,23 @@ class UserConceptProgress(Base):
         UniqueConstraint("user_id", "concept_id", name="uq_user_concept"),
     )
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("profiles.id"), index=True)
     concept_id: Mapped[int] = mapped_column(ForeignKey("concepts.id"), index=True)
     solved_count: Mapped[int] = mapped_column(Integer, default=0)
     failed_count: Mapped[int] = mapped_column(Integer, default=0)
     mastery_score: Mapped[float] = mapped_column(Float, default=0.0)
     last_practiced_at: Mapped[str | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
-    user: Mapped["User"] = relationship()
+    user: Mapped["Profile"] = relationship()
     concept: Mapped["Concept"] = relationship()
 
 
 class AIConversation(Base):
     __tablename__ = "ai_conversations"
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("profiles.id"), index=True)
     problem_id: Mapped[int | None] = mapped_column(ForeignKey("problems.id"), nullable=True, index=True)
     lesson_id: Mapped[int | None] = mapped_column(ForeignKey("lessons.id"), nullable=True, index=True)
     task_type: Mapped[str] = mapped_column(String(50), default="")
@@ -502,7 +504,7 @@ class AIConversation(Base):
 class AIMessage(Base):
     __tablename__ = "ai_messages"
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
     conversation_id: Mapped[int] = mapped_column(ForeignKey("ai_conversations.id"), index=True)
     role: Mapped[str] = mapped_column(String(20))
     content: Mapped[str] = mapped_column(Text)
@@ -516,8 +518,8 @@ class AIMessage(Base):
 class AIFeedback(Base):
     __tablename__ = "ai_feedback"
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("profiles.id"), index=True)
     message_id: Mapped[int | None] = mapped_column(ForeignKey("ai_messages.id"), nullable=True)
     rating: Mapped[str] = mapped_column(String(20))
     comment: Mapped[str] = mapped_column(Text, default="")
@@ -532,7 +534,7 @@ class Discussion(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     problem_id: Mapped[int] = mapped_column(ForeignKey("problems.id"), index=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("profiles.id"), index=True)
     parent_id: Mapped[int | None] = mapped_column(ForeignKey("discussions.id"), nullable=True)
     content: Mapped[str] = mapped_column(Text)
     upvotes: Mapped[int] = mapped_column(Integer, default=0)
@@ -544,7 +546,7 @@ class Discussion(Base):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
 
-    user: Mapped["User"] = relationship()
+    user: Mapped["Profile"] = relationship()
     replies: Mapped[list["Discussion"]] = relationship(
         back_populates="parent", cascade="all, delete-orphan",
         foreign_keys="Discussion.parent_id"
@@ -565,11 +567,11 @@ class DiscussionVote(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     discussion_id: Mapped[int] = mapped_column(ForeignKey("discussions.id"), index=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("profiles.id"), index=True)
     vote: Mapped[int] = mapped_column(Integer, default=1)
     created_at: Mapped[str] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
 
     discussion: Mapped["Discussion"] = relationship(back_populates="votes")
-    user: Mapped["User"] = relationship()
+    user: Mapped["Profile"] = relationship()

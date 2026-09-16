@@ -14,7 +14,7 @@ from app.db.models import (
     LearningPath,
     Quiz,
     QuizQuestion,
-    User,
+    Profile,
 )
 from app.api.routes.auth import get_current_user, require_user
 from app.services.learning_service import (
@@ -192,7 +192,7 @@ def get_path(slug: str, db: Session = Depends(get_db)):
 
 
 @router.get("/lessons/{slug}")
-def get_lesson(slug: str, user: User | None = Depends(get_current_user), db: Session = Depends(get_db)):
+def get_lesson(slug: str, user: Profile | None = Depends(get_current_user), db: Session = Depends(get_db)):
     lesson = db.query(Lesson).filter(Lesson.slug == slug, Lesson.published == True).first()
     if not lesson:
         raise HTTPException(status_code=404, detail="Lesson not found")
@@ -287,7 +287,7 @@ def get_lesson(slug: str, user: User | None = Depends(get_current_user), db: Ses
 
 
 @router.post("/lessons/{slug}/start")
-def start_lesson_endpoint(slug: str, user: User = Depends(require_user), db: Session = Depends(get_db)):
+def start_lesson_endpoint(slug: str, user: Profile = Depends(require_user), db: Session = Depends(get_db)):
     lesson = db.query(Lesson).filter(Lesson.slug == slug, Lesson.published == True).first()
     if not lesson:
         raise HTTPException(status_code=404, detail="Lesson not found")
@@ -300,7 +300,7 @@ def start_lesson_endpoint(slug: str, user: User = Depends(require_user), db: Ses
 
 
 @router.post("/lessons/{slug}/complete")
-def complete_lesson_endpoint(slug: str, user: User = Depends(require_user), db: Session = Depends(get_db)):
+def complete_lesson_endpoint(slug: str, user: Profile = Depends(require_user), db: Session = Depends(get_db)):
     lesson = db.query(Lesson).filter(Lesson.slug == slug, Lesson.published == True).first()
     if not lesson:
         raise HTTPException(status_code=404, detail="Lesson not found")
@@ -346,7 +346,7 @@ def get_quiz(lesson_slug: str, db: Session = Depends(get_db)):
 
 
 @router.post("/quizzes/{quiz_id}/attempt")
-def attempt_quiz(quiz_id: int, req: QuizSubmitRequest, user: User = Depends(require_user), db: Session = Depends(get_db)):
+def attempt_quiz(quiz_id: int, req: QuizSubmitRequest, user: Profile = Depends(require_user), db: Session = Depends(get_db)):
     quiz = db.query(Quiz).filter(Quiz.id == quiz_id).first()
     if not quiz:
         raise HTTPException(status_code=404, detail="Quiz not found")
@@ -364,7 +364,7 @@ def attempt_quiz(quiz_id: int, req: QuizSubmitRequest, user: User = Depends(requ
 
 
 @router.get("/progress")
-def learning_progress(user: User = Depends(require_user), db: Session = Depends(get_db)):
+def learning_progress(user: Profile = Depends(require_user), db: Session = Depends(get_db)):
     return get_learning_progress(db, user.id)
 
 
@@ -385,13 +385,13 @@ def list_concepts(db: Session = Depends(get_db)):
 
 
 @router.get("/concepts/mastery")
-def concept_mastery(user: User = Depends(require_user), db: Session = Depends(get_db)):
+def concept_mastery(user: Profile = Depends(require_user), db: Session = Depends(get_db)):
     concepts = get_concept_mastery(db, user.id)
     return {"concepts": concepts}
 
 
 @router.get("/recommendations")
-def recommendations(user: User = Depends(require_user), db: Session = Depends(get_db)):
+def recommendations(user: Profile = Depends(require_user), db: Session = Depends(get_db)):
     return get_recommendations(db, user.id)
 
 

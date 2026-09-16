@@ -1,6 +1,7 @@
 """Tests for Phase 7: XP, achievements, leaderboard."""
 
 import pytest
+import uuid
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -12,10 +13,10 @@ from app.db.models import (
     Difficulty,
     Language,
     Problem,
-    User,
+    Profile,
 )
 from app.main import app
-from app.services.auth_service import create_access_token, hash_password
+from app.services.auth_service import create_access_token
 from app.services.achievement_service import calculate_level, LEVEL_THRESHOLDS
 
 
@@ -58,11 +59,10 @@ def client(db_engine):
 
 @pytest.fixture
 def test_user(db_session):
-    user = User(
-        email="test@example.com",
+    user = Profile(
+        id=str(uuid.uuid5(uuid.NAMESPACE_DNS, "testuser")),
         username="testuser",
-        password_hash=hash_password("password123"),
-        display_name="Test User",
+        display_name="Test Profile",
     )
     db_session.add(user)
     db_session.commit()
@@ -129,10 +129,9 @@ class TestLeaderboardEndpoint:
     def test_leaderboard_with_users(self, client, db_session):
         users = []
         for i in range(5):
-            u = User(
-                email=f"user{i}@example.com",
+            u = Profile(
+                id=str(uuid.uuid5(uuid.NAMESPACE_DNS, f"user{i}")),
                 username=f"user{i}",
-                password_hash=hash_password("pass123"),
                 xp=(5 - i) * 100,
                 level=5 - i,
             )
@@ -149,10 +148,9 @@ class TestLeaderboardEndpoint:
 
     def test_leaderboard_pagination(self, client, db_session):
         for i in range(25):
-            u = User(
-                email=f"page{i}@example.com",
+            u = Profile(
+                id=str(uuid.uuid5(uuid.NAMESPACE_DNS, f"pageuser{i}")),
                 username=f"pageuser{i}",
-                password_hash=hash_password("pass123"),
                 xp=i * 10,
             )
             db_session.add(u)
@@ -165,8 +163,8 @@ class TestLeaderboardEndpoint:
         assert data["total_pages"] == 3
 
     def test_leaderboard_search(self, client, db_session):
-        u1 = User(email="alice@example.com", username="alice", password_hash=hash_password("pass123"), xp=100)
-        u2 = User(email="bob@example.com", username="bob", password_hash=hash_password("pass123"), xp=200)
+        u1 = Profile(id=str(uuid.uuid5(uuid.NAMESPACE_DNS, "alice")), username="alice", xp=100)
+        u2 = Profile(id=str(uuid.uuid5(uuid.NAMESPACE_DNS, "bob")), username="bob", xp=200)
         db_session.add_all([u1, u2])
         db_session.commit()
 
@@ -265,10 +263,9 @@ class TestSubmissionResponseWithXP:
 
 class TestUserModelXP:
     def test_user_default_xp(self, db_session):
-        user = User(
-            email="new@example.com",
+        user = Profile(
+            id=str(uuid.uuid5(uuid.NAMESPACE_DNS, "newuser")),
             username="newuser",
-            password_hash=hash_password("pass123"),
         )
         db_session.add(user)
         db_session.commit()

@@ -12,7 +12,7 @@ from app.db.models import (
     Problem,
     ProgressStatus,
     Submission,
-    User,
+    Profile,
     UserAchievement,
     UserProblemProgress,
 )
@@ -61,28 +61,28 @@ def xp_for_current_level(level: int) -> int:
     return LEVEL_THRESHOLDS[-1]
 
 
-def award_solve_xp(user: User, problem: Problem) -> int:
+def award_solve_xp(user: Profile, problem: Problem) -> int:
     """Award XP for solving a problem. Returns XP earned (0 if already solved)."""
     return DIFFICULTY_XP.get(problem.difficulty, 10)
 
 
-def get_user_rank(db: Session, user_id: int) -> int:
+def get_user_rank(db: Session, user_id: str) -> int:
     """Get the user's rank by XP (descending), tie-break by solved_count (descending)."""
-    user = db.query(User).filter(User.id == user_id).first()
+    user = db.query(Profile).filter(Profile.id == user_id).first()
     if not user:
         return 0
 
     rank = (
-        db.query(func.count(User.id))
+        db.query(func.count(Profile.id))
         .filter(
-            (User.xp > user.xp) | ((User.xp == user.xp) & (User.solved_count > user.solved_count))
+            (Profile.xp > user.xp) | ((Profile.xp == user.xp) & (Profile.solved_count > user.solved_count))
         )
         .scalar()
     )
     return (rank or 0) + 1
 
 
-def calculate_streak(db: Session, user_id: int) -> int:
+def calculate_streak(db: Session, user_id: str) -> int:
     """Calculate consecutive days with submissions."""
     today = datetime.now(timezone.utc).date()
     streak = 0
@@ -121,7 +121,7 @@ def calculate_streak(db: Session, user_id: int) -> int:
     return streak
 
 
-def evaluate_achievements(db: Session, user: User) -> list[AchievementUnlock]:
+def evaluate_achievements(db: Session, user: Profile) -> list[AchievementUnlock]:
     """Evaluate all achievements for a user and unlock newly eligible ones. Returns newly unlocked."""
     achievements = db.query(Achievement).all()
     unlocked_ids = {

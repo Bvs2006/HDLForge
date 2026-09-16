@@ -17,7 +17,7 @@ from app.db.models import (
     ProgressStatus,
     Submission,
     SubmissionStatus,
-    User,
+    Profile,
     UserAchievement,
     UserConceptProgress,
     UserProblemProgress,
@@ -126,7 +126,7 @@ class DashboardResponseModel(BaseModel):
     personal_bests: PersonalBests
 
 
-def _get_learning_progress(db: Session, user_id: int) -> dict:
+def _get_learning_progress(db: Session, user_id: str) -> dict:
     paths = db.query(LearningPath).filter(LearningPath.published == True).all()
 
     total_lessons = 0
@@ -202,8 +202,8 @@ def _get_learning_progress(db: Session, user_id: int) -> dict:
     }
 
 
-def get_dashboard(db: Session, user_id: int) -> dict:
-    user = db.query(User).filter(User.id == user_id).first()
+def get_dashboard(db: Session, user_id: str) -> dict:
+    user = db.query(Profile).filter(Profile.id == user_id).first()
     if not user:
         return {}
 

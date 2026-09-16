@@ -31,7 +31,7 @@ def build_explain_code_prompt(ctx: AIContext) -> list[AIMessage]:
 Problem description:
 {ctx.problem_description}
 
-User's RTL code:
+Profile's RTL code:
 ```systemverilog
 {ctx.user_rtl}
 ```
@@ -63,7 +63,7 @@ Compiler output:
 {ctx.compiler_error}
 ```
 
-User's RTL code:
+Profile's RTL code:
 ```systemverilog
 {ctx.user_rtl}
 ```
@@ -103,7 +103,7 @@ def build_debug_submission_prompt(ctx: AIContext) -> list[AIMessage]:
 
 Submission status: {ctx.submission_status}
 
-User's RTL code:
+Profile's RTL code:
 ```systemverilog
 {ctx.user_rtl}
 ```
@@ -151,7 +151,7 @@ def build_hint_prompt(ctx: AIContext) -> list[AIMessage]:
 Problem description:
 {ctx.problem_description}
 
-User's current RTL:
+Profile's current RTL:
 ```systemverilog
 {ctx.user_rtl}
 ```
@@ -180,7 +180,7 @@ def build_explain_waveform_prompt(ctx: AIContext) -> list[AIMessage]:
 
 {waveform_desc}
 
-User's RTL:
+Profile's RTL:
 ```systemverilog
 {ctx.user_rtl}
 ```
@@ -215,7 +215,7 @@ def build_ask_question_prompt(ctx: AIContext) -> list[AIMessage]:
 
     prompt = f"""{context_str}
 
-User question: {ctx.user_question}
+Profile question: {ctx.user_question}
 
 Answer the question clearly and concisely. Use SystemVerilog examples where helpful. If the question relates to the current problem or lesson, provide context-aware answers."""
 

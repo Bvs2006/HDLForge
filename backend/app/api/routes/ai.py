@@ -16,7 +16,7 @@ from app.db.models import (
     AIConversation,
     Problem,
     Submission,
-    User,
+    Profile,
     Waveform,
 )
 from app.services.ai.ai_service import handle_ai_request, save_conversation
@@ -141,7 +141,7 @@ def _build_lesson_context(
 @router.post("/chat")
 async def ai_chat(
     request: AIRequest,
-    user: User = Depends(require_user),
+    user: Profile = Depends(require_user),
     db: Session = Depends(get_db),
 ):
     if not settings.AI_ENABLED:
@@ -215,7 +215,7 @@ async def ai_chat(
 @router.post("/feedback")
 async def ai_feedback(
     request: AIFeedbackRequest,
-    user: User = Depends(require_user),
+    user: Profile = Depends(require_user),
     db: Session = Depends(get_db),
 ):
     if request.rating not in ("helpful", "not_helpful"):
@@ -236,7 +236,7 @@ async def ai_feedback(
 
 @router.get("/conversations")
 async def list_conversations(
-    user: User = Depends(require_user),
+    user: Profile = Depends(require_user),
     db: Session = Depends(get_db),
 ):
     convs = (
@@ -263,7 +263,7 @@ async def list_conversations(
 @router.get("/conversations/{conversation_id}")
 async def get_conversation(
     conversation_id: int,
-    user: User = Depends(require_user),
+    user: Profile = Depends(require_user),
     db: Session = Depends(get_db),
 ):
     conv = (

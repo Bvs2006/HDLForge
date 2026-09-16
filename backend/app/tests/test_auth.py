@@ -5,10 +5,8 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.db.database import Base, get_db
-from app.db.models import Difficulty, Language, Problem, User, UserProblemProgress, ProgressStatus
+from app.db.models import Difficulty, Language, Problem, Profile, UserProblemProgress, ProgressStatus
 from app.main import app
-
-TEST_DATABASE_URL = "sqlite:///./test_auth.db"
 
 
 @pytest.fixture
@@ -58,14 +56,13 @@ class TestRegistration:
                 "email": "test@example.com",
                 "username": "testuser",
                 "password": "password123",
-                "display_name": "Test User",
+                "display_name": "Test Profile",
             },
         )
         assert response.status_code == 200
         data = response.json()
-        assert data["user"]["email"] == "test@example.com"
         assert data["user"]["username"] == "testuser"
-        assert data["user"]["display_name"] == "Test User"
+        assert data["user"]["display_name"] == "Test Profile"
         assert "token" in data
 
     def test_register_duplicate_email(self, client):
@@ -150,7 +147,7 @@ class TestLogin:
         )
         assert response.status_code == 200
         data = response.json()
-        assert data["user"]["email"] == "test@example.com"
+        assert data["user"]["username"] == "testuser"
         assert "token" in data
 
     def test_login_wrong_password(self, client):
@@ -199,7 +196,7 @@ class TestGetCurrentUser:
             cookies={"access_token": token},
         )
         assert response.status_code == 200
-        assert response.json()["email"] == "test@example.com"
+        assert response.json()["username"] == "testuser"
 
     def test_get_me_unauthenticated(self, client):
         response = client.get("/api/auth/me")

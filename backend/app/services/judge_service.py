@@ -34,6 +34,7 @@ from app.services.achievement_service import (
     calculate_level,
     evaluate_achievements,
 )
+from app.core.config import settings
 from app.services.waveform_service import waveform_storage
 
 logger = logging.getLogger(__name__)
@@ -50,7 +51,7 @@ class JudgeService:
     """Orchestrates HDL testing with public/hidden test separation and weighted scoring."""
 
     def __init__(self, runner: ExecutionRunner | None = None) -> None:
-        self.runner = runner or ExecutionRunner(use_docker=False)
+        self.runner = runner or ExecutionRunner(use_docker=settings.HDL_USE_DOCKER)
 
     def judge_run(
         self,
@@ -67,10 +68,10 @@ class JudgeService:
                 submission_id=0,
             )
 
-        if request.language.value != "SYSTEMVERILOG":
+        if request.language.value not in ("SYSTEMVERILOG", "VERILOG"):
             return SubmissionResponse(
                 status="error",
-                message="Only SystemVerilog is currently supported.",
+                message=f"Language '{request.language.value}' is not supported.",
                 submission_id=0,
             )
 
@@ -120,10 +121,10 @@ class JudgeService:
                 submission_id=0,
             )
 
-        if request.language.value != "SYSTEMVERILOG":
+        if request.language.value not in ("SYSTEMVERILOG", "VERILOG"):
             return SubmissionResponse(
                 status="error",
-                message="Only SystemVerilog is currently supported.",
+                message=f"Language '{request.language.value}' is not supported.",
                 submission_id=0,
             )
 
@@ -269,9 +270,10 @@ class JudgeService:
 
         for te in test_executions:
             if te.result:
+                tc_id = te.test_case.id if (te.test_case and te.test_case.id and te.test_case.id > 0) else None
                 str_result = SubmissionTestResult(
                     submission_id=submission.id,
-                    test_case_id=te.test_case.id,
+                    test_case_id=tc_id,
                     test_name=te.test_case.name,
                     status="PASSED" if te.result.passed else "FAILED",
                     score=te.score,

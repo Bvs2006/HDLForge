@@ -44,6 +44,22 @@ class DockerSandbox:
         workspace_path = workspace.workspace_path
         container_name = f"hdlforge-{uuid.uuid4().hex[:8]}"
 
+        from app.core.config import settings
+
+        if settings.SIMULATOR.lower() == "icarus":
+            sim_cmd = (
+                "iverilog -g2012 -o /workspace/sim.out /workspace/submission.sv /workspace/testbench.sv "
+                "&& vvp /workspace/sim.out"
+            )
+        else:
+            sim_cmd = (
+                "verilator --cc --exe --build --top-module testbench "
+                "-Wall -Wno-DECLFILENAME -Wno-STMTDLY -Wno-UNUSED -Wno-fatal -o Vtestbench "
+                "-Mdir /workspace/obj_dir "
+                "/workspace/testbench.sv /workspace/submission.sv /workspace/sim_main.cpp "
+                "&& /workspace/obj_dir/Vtestbench"
+            )
+
         try:
             # Create container
             create_cmd = [
@@ -51,7 +67,7 @@ class DockerSandbox:
                 "--name", container_name,
                 "--network", "none",
                 "--tmpfs", "/tmp:rw,noexec,nosuid,size=64m",
-                "--cpus", str(limits.cpu_seconds / limits.timeout_seconds),
+                "--cpus", "2.0",
                 "--memory", f"{limits.memory_mb}m",
                 "--pids-limit", str(limits.process_limit),
                 "--security-opt", "no-new-privileges",
@@ -59,13 +75,7 @@ class DockerSandbox:
                 "-w", "/workspace",
                 DOCKER_IMAGE,
                 "bash", "-c",
-                (
-                    "verilator --cc --exe --build --top-module testbench "
-                    "-Wall -Wno-DECLFILENAME -Wno-STMTDLY -Wno-UNUSED -Wno-fatal -o Vtestbench "
-                    "-Mdir /workspace/obj_dir "
-                    "/workspace/testbench.sv /workspace/submission.sv /workspace/sim_main.cpp "
-                    "&& /workspace/obj_dir/Vtestbench"
-                ),
+                sim_cmd,
             ]
             subprocess.run(create_cmd, capture_output=True, text=True, timeout=10)
 
@@ -77,28 +87,29 @@ class DockerSandbox:
                     capture_output=True, text=True, timeout=10,
                 )
 
-            # Write sim_main.cpp for Verilator (must advance time for # delays)
-            sim_main = workspace_path / "sim_main.cpp"
-            sim_main.write_text(
-                '#include "Vtestbench.h"\n'
-                '#include "verilated.h"\n'
-                'static double sim_time = 0.0;\n'
-                'double sc_time_stamp() { return sim_time; }\n'
-                'int main(int argc, char** argv) {\n'
-                '    Verilated::commandArgs(argc, argv);\n'
-                '    Vtestbench* tb = new Vtestbench;\n'
-                '    while (!Verilated::gotFinish()) {\n'
-                '        tb->eval();\n'
-                '        sim_time += 1.0;\n'
-                '    }\n'
-                '    delete tb;\n'
-                '    return 0;\n'
-                '}\n'
-            )
-            subprocess.run(
-                ["docker", "cp", str(sim_main), f"{container_name}:/workspace/sim_main.cpp"],
-                capture_output=True, text=True, timeout=10,
-            )
+            if settings.SIMULATOR.lower() != "icarus":
+                # Write sim_main.cpp for Verilator (must advance time for # delays)
+                sim_main = workspace_path / "sim_main.cpp"
+                sim_main.write_text(
+                    '#include "Vtestbench.h"\n'
+                    '#include "verilated.h"\n'
+                    'static double sim_time = 0.0;\n'
+                    'double sc_time_stamp() { return sim_time; }\n'
+                    'int main(int argc, char** argv) {\n'
+                    '    Verilated::commandArgs(argc, argv);\n'
+                    '    Vtestbench* tb = new Vtestbench;\n'
+                    '    while (!Verilated::gotFinish()) {\n'
+                    '        tb->eval();\n'
+                    '        sim_time += 1.0;\n'
+                    '    }\n'
+                    '    delete tb;\n'
+                    '    return 0;\n'
+                    '}\n'
+                )
+                subprocess.run(
+                    ["docker", "cp", str(sim_main), f"{container_name}:/workspace/sim_main.cpp"],
+                    capture_output=True, text=True, timeout=10,
+                )
 
             # Start container
             subprocess.run(
@@ -122,6 +133,12 @@ class DockerSandbox:
             logs_result = subprocess.run(
                 ["docker", "logs", container_name],
                 capture_output=True, text=True, timeout=10,
+            )
+
+            # Copy out VCD if generated
+            subprocess.run(
+                ["docker", "cp", f"{container_name}:/workspace/simulation.vcd", str(workspace_path / "simulation.vcd")],
+                capture_output=True, text=True, timeout=5,
             )
 
             exit_code = int(wait_result.stdout.strip()) if wait_result.stdout.strip() else -1

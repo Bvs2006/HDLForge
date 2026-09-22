@@ -4,6 +4,8 @@ import Editor from "@monaco-editor/react";
 import { useRef } from "react";
 import type { OnMount } from "@monaco-editor/react";
 
+import { useTheme } from "@/lib/theme";
+
 interface CodeEditorProps {
   value: string;
   onChange: (value: string) => void;
@@ -17,6 +19,7 @@ export default function CodeEditor({
   language = "systemverilog",
   height = "100%",
 }: CodeEditorProps) {
+  const { theme } = useTheme();
   const editorRef = useRef<Parameters<OnMount>[0] | null>(null);
 
   const handleEditorMount: OnMount = (editor) => {
@@ -32,7 +35,7 @@ export default function CodeEditor({
         value={value}
         onChange={(v) => onChange(v ?? "")}
         onMount={handleEditorMount}
-        theme="vs-dark"
+        theme={theme === "dark" ? "vs-dark" : "vs"}
         options={{
           fontSize: 13,
           fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace",

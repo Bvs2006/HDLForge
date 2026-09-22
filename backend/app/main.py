@@ -1,13 +1,29 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes import auth, dashboard, problems, submissions, waveforms, leaderboard, achievements, learning, ai
 from app.core.config import settings
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Seed new problems on startup (idempotent)
+    try:
+        from app.seed_expand import seed_new_problems
+        seed_new_problems()
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning("seed_expand failed: %s", e)
+    yield
+
+
 app = FastAPI(
     title=settings.PROJECT_NAME,
     docs_url="/docs",
     redoc_url="/redoc",
+    lifespan=lifespan,
 )
 
 app.add_middleware(

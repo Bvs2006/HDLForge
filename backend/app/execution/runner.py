@@ -8,7 +8,6 @@ from app.execution.limits import ExecutionLimits
 from app.execution.workspace import ExecutionWorkspace
 from app.sandbox.docker import DockerSandbox
 from app.simulator.base import HDLSimulator, SimulationResult, SimulationStatus
-from app.simulator import get_simulator
 from app.schemas.submission import (
     SubmissionResponse,
     TestResult,
@@ -46,6 +45,7 @@ class ExecutionRunner:
 
             workspace.write_testbench(testbench_code)
 
+            from app.simulator import get_simulator
             simulator = get_simulator(settings.SIMULATOR, workspace=workspace, limits=job.limits)
 
             if self.use_docker and self.sandbox is not None:
@@ -96,9 +96,12 @@ class ExecutionRunner:
         if compile_result.status != SimulationStatus.COMPILATION_OK:
             return compile_result
 
-        return simulator.simulate(
-            binary_path=workspace.workspace_path / "obj_dir" / "Vtestbench",
+        binary_path = (
+            workspace.workspace_path / "simulation.out"
+            if settings.SIMULATOR.lower() == "icarus"
+            else workspace.workspace_path / "obj_dir" / "Vtestbench"
         )
+        return simulator.simulate(binary_path=binary_path)
 
     def _execute_in_sandbox(
         self,

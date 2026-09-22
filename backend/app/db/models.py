@@ -57,6 +57,7 @@ class Problem(Base):
     time_complexity: Mapped[str] = mapped_column(String(50), default="")
     space_complexity: Mapped[str] = mapped_column(String(50), default="")
     reference_solution: Mapped[str] = mapped_column(Text, default="")
+    company_tags: Mapped[str] = mapped_column(String(200), default="")
     time_limit: Mapped[int] = mapped_column(Integer, default=5)
     memory_limit: Mapped[int] = mapped_column(Integer, default=256)
     created_at: Mapped[str] = mapped_column(
@@ -132,7 +133,7 @@ class SubmissionTestResult(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     submission_id: Mapped[int] = mapped_column(ForeignKey("submissions.id"), index=True)
-    test_case_id: Mapped[int] = mapped_column(ForeignKey("test_cases.id"))
+    test_case_id: Mapped[int | None] = mapped_column(ForeignKey("test_cases.id"), nullable=True)
     test_name: Mapped[str] = mapped_column(String(200))
     status: Mapped[str] = mapped_column(String(50))
     score: Mapped[float] = mapped_column(Float, default=0.0)

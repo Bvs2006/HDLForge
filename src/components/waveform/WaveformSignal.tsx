@@ -223,7 +223,7 @@ function MultiBitSegment({
         y1={7}
         x2={x + width}
         y2={7}
-        stroke="rgb(0,217,165)"
+        stroke="var(--accent)"
         strokeWidth="0.3"
         vectorEffect="non-scaling-stroke"
       />
@@ -232,7 +232,7 @@ function MultiBitSegment({
         y1={13}
         x2={x + width}
         y2={13}
-        stroke="rgb(0,217,165)"
+        stroke="var(--accent)"
         strokeWidth="0.3"
         vectorEffect="non-scaling-stroke"
       />

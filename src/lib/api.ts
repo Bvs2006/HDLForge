@@ -461,6 +461,118 @@ endmodule`,
   },
   {
     id: "11",
+    slug: "chip-adder-4bit",
+    title: "4-Bit Ripple Carry Adder Chip",
+    difficulty: "easy",
+    category: "Chip Design",
+    language: "systemverilog",
+    companyTags: ["Intel", "AMD", "Qualcomm"],
+    description: "Construct a 4-bit ripple carry adder chip by instantiating full_adder parts.",
+    inputDescription: "a[3:0], b[3:0] — 4-bit inputs, cin — carry in",
+    outputDescription: "sum[3:0] — 4-bit sum, cout — carry out",
+    constraints: ["Hierarchical structural model using full_adder parts."],
+    examples: [
+      { title: "Addition without carry", input: "a = 4'b0010, b = 4'b0001, cin = 0", output: "sum = 4'b0011, cout = 0" },
+      { title: "Addition with carry out", input: "a = 4'b1111, b = 4'b0001, cin = 0", output: "sum = 4'b0000, cout = 1" },
+    ],
+    starterCode: `module chip_adder4 (
+  input  logic [3:0] a,
+  input  logic [3:0] b,
+  input  logic       cin,
+  output logic [3:0] sum,
+  output logic       cout
+);
+  // Internal carry wires between Full Adder parts
+  wire c1, c2, c3;
+
+  // Instantiate 4 full_adder parts:
+  // full_adder fa0 (.a(...), .b(...), .cin(...), .sum(...), .cout(...));
+
+endmodule`,
+  },
+  {
+    id: "12",
+    slug: "chip-mux-4to1",
+    title: "4:1 Multiplexer from 2:1 MUX Parts",
+    difficulty: "easy",
+    category: "Chip Design",
+    language: "systemverilog",
+    companyTags: ["NVIDIA", "Apple", "Broadcom"],
+    description: "Construct a 4-to-1 multiplexer by instantiating three 2:1 multiplexer (mux2) parts.",
+    inputDescription: "d0, d1, d2, d3 — single-bit inputs, sel[1:0] — 2-bit select",
+    outputDescription: "y — selected output",
+    constraints: ["Must use three mux2 instances."],
+    examples: [
+      { title: "Select channel 0", input: "d0=1, d1=0, d2=0, d3=0, sel=2'b00", output: "y = 1" },
+      { title: "Select channel 3", input: "d0=0, d1=0, d2=0, d3=1, sel=2'b11", output: "y = 1" },
+    ],
+    starterCode: `module chip_mux4 (
+  input  logic       d0,
+  input  logic       d1,
+  input  logic       d2,
+  input  logic       d3,
+  input  logic [1:0] sel,
+  output logic       y
+);
+  // Internal wires connecting stage-1 mux parts to stage-2 mux
+  wire m01, m23;
+
+  // Instantiate 3 mux2 parts:
+  // mux2 mux_lo (.d0(d0), .d1(d1), .sel(sel[0]), .y(m01));
+  // mux2 mux_hi (.d0(d2), .d1(d3), .sel(sel[0]), .y(m23));
+  // mux2 mux_out (.d0(m01), .d1(m23), .sel(sel[1]), .y(y));
+
+endmodule`,
+  },
+  {
+    id: "13",
+    slug: "sync-fifo",
+    title: "Synchronous FIFO Buffer",
+    difficulty: "medium",
+    category: "Sequential Logic",
+    language: "systemverilog",
+    companyTags: ["Apple Silicon", "NVIDIA", "Google Silicon"],
+    description: "Implement an 8-word x 8-bit synchronous First-In First-Out (FIFO) buffer with full and empty flags.",
+    inputDescription: "clk, rst, wr_en, rd_en, din[7:0]",
+    outputDescription: "dout[7:0], full, empty",
+    constraints: ["Synchronous write on posedge clk when wr_en && !full", "Synchronous read when rd_en && !empty"],
+    examples: [
+      { title: "Empty at reset", input: "rst = 1", output: "empty = 1, full = 0" },
+      { title: "Write single word", input: "wr_en = 1, din = 8'hA5", output: "empty = 0, full = 0" },
+    ],
+    starterCode: `module sync_fifo (
+  input  logic       clk,
+  input  logic       rst,
+  input  logic       wr_en,
+  input  logic       rd_en,
+  input  logic [7:0] din,
+  output logic [7:0] dout,
+  output logic       full,
+  output logic       empty
+);
+  logic [7:0] mem [0:7];
+  logic [2:0] wr_ptr;
+  logic [2:0] rd_ptr;
+  logic [3:0] count;
+
+  assign empty = (count == 4'd0);
+  assign full  = (count == 4'd8);
+
+  always_ff @(posedge clk) begin
+    if (rst) begin
+      wr_ptr <= 3'd0;
+      rd_ptr <= 3'd0;
+      count  <= 4'd0;
+      dout   <= 8'd0;
+    end else begin
+      // Your code here
+    end
+  end
+
+endmodule`,
+  },
+  {
+    id: "14",
     slug: "priority-encoder-8to3",
     title: "8-to-3 Priority Encoder",
     difficulty: "easy",
@@ -486,7 +598,7 @@ endmodule`,
 endmodule`,
   },
   {
-    id: "12",
+    id: "15",
     slug: "gray-code-converter",
     title: "Binary & Gray Code Converter",
     difficulty: "easy",
@@ -512,7 +624,7 @@ endmodule`,
 endmodule`,
   },
   {
-    id: "13",
+    id: "16",
     slug: "leading-zero-counter",
     title: "Leading Zero Counter (8-bit)",
     difficulty: "medium",
@@ -538,7 +650,7 @@ endmodule`,
 endmodule`,
   },
   {
-    id: "14",
+    id: "17",
     slug: "adder-subtractor-4bit",
     title: "4-Bit Adder-Subtractor with Overflow",
     difficulty: "medium",
@@ -567,7 +679,7 @@ endmodule`,
 endmodule`,
   },
   {
-    id: "15",
+    id: "18",
     slug: "edge-detector",
     title: "Multi-Edge Detector",
     difficulty: "easy",
@@ -596,7 +708,7 @@ endmodule`,
 endmodule`,
   },
   {
-    id: "16",
+    id: "19",
     slug: "lfsr-8bit",
     title: "8-Bit Fibonacci LFSR",
     difficulty: "medium",
@@ -623,7 +735,7 @@ endmodule`,
 endmodule`,
   },
   {
-    id: "17",
+    id: "20",
     slug: "traffic-light-fsm",
     title: "Traffic Light Controller FSM",
     difficulty: "medium",
@@ -652,7 +764,7 @@ endmodule`,
 endmodule`,
   },
   {
-    id: "18",
+    id: "21",
     slug: "binary-to-bcd",
     title: "Binary to BCD Converter (Double Dabble)",
     difficulty: "hard",

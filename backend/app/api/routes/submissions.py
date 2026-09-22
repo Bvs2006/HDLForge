@@ -136,16 +136,19 @@ def get_submission(
 def get_problem_submissions(
     problem_slug: str,
     db: Session = Depends(get_db),
-    user: Profile = Depends(require_authenticated_user),
+    user: Profile | None = Depends(get_optional_user),
 ):
-    """Return the authenticated user's own submissions for a problem only."""
+    """Return user's submissions, or recent submissions for this problem."""
     problem = db.query(Problem).filter(Problem.slug == problem_slug).first()
     if not problem:
         raise HTTPException(status_code=404, detail=f"Problem '{problem_slug}' not found")
 
+    query = db.query(Submission).filter(Submission.problem_id == problem.id)
+    if user:
+        query = query.filter(Submission.user_id == user.id)
+
     submissions = (
-        db.query(Submission)
-        .filter(Submission.problem_id == problem.id, Submission.user_id == user.id)
+        query
         .order_by(Submission.created_at.desc())
         .limit(50)
         .all()
@@ -311,10 +314,12 @@ def get_solutions(problem_slug: str, db: Session = Depends(get_db)):
         s_user = db.query(Profile).filter(Profile.id == s.user_id).first()
         code = ""
         approach = s.content
+        title = "Community Solution"
         tags = []
         try:
             parsed = json.loads(s.content)
             if isinstance(parsed, dict):
+                title = parsed.get("title") or "Community Solution"
                 approach = parsed.get("approach", "")
                 code = parsed.get("code", "")
                 tags = parsed.get("tags", [])
@@ -323,7 +328,7 @@ def get_solutions(problem_slug: str, db: Session = Depends(get_db)):
 
         result.append({
             "id": s.id,
-            "title": s.title or "Community Solution",
+            "title": title,
             "content": approach,
             "code": code,
             "tags": tags,
@@ -365,6 +370,7 @@ def create_solution(
             user_id = profile.id
 
     content_json = json.dumps({
+        "title": request.title,
         "approach": request.content,
         "code": request.code,
         "language": request.language,
@@ -374,7 +380,6 @@ def create_solution(
     solution = Discussion(
         problem_id=problem.id,
         user_id=user_id,
-        title=request.title,
         content=content_json,
         is_solution=True,
     )
@@ -384,7 +389,7 @@ def create_solution(
 
     return {
         "id": solution.id,
-        "title": solution.title,
+        "title": request.title,
         "message": "Solution posted successfully!",
     }
 

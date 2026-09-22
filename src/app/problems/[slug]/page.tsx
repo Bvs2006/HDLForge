@@ -371,6 +371,7 @@ export default function ProblemPage({
         testbenchCode: activeEditorTab === "testbench" ? testbenchCode : undefined,
       });
       setResult(res);
+      void loadSubmissions();
       if (res.xpEarned > 0 || res.achievementsUnlocked.length > 0) {
         setXpNotification({
           xpEarned: res.xpEarned,

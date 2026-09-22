@@ -177,68 +177,23 @@ class DockerSandbox:
         workspace: ExecutionWorkspace,
         limits: ExecutionLimits,
     ) -> SimulationResult:
-        submission_path = workspace.workspace_path / "submission.sv"
-        testbench_path = workspace.workspace_path / "testbench.sv"
+        from app.core.config import settings
+        from app.simulator import get_simulator
 
-        compile_cmd = [
-            "verilator",
-            "--cc",
-            "--exe",
-            "--build",
-            "--top-module",
-            "testbench",
-            "-Wall",
-            "-Wno-DECLFILENAME",
-            "-o",
-            "Vtestbench",
-            "-Mdir",
-            str(workspace.workspace_path / "obj_dir"),
-            str(testbench_path),
-            str(submission_path),
-        ]
+        simulator = get_simulator(settings.SIMULATOR, workspace=workspace, limits=limits)
+        compile_result = simulator.compile(
+            submission_path=workspace.workspace_path / "submission.sv",
+            testbench_path=workspace.workspace_path / "testbench.sv",
+        )
+        if compile_result.status != SimulationStatus.COMPILATION_OK:
+            return compile_result
 
-        try:
-            proc = subprocess.run(
-                compile_cmd,
-                capture_output=True,
-                text=True,
-                timeout=limits.timeout_seconds,
-                cwd=str(workspace.workspace_path),
-            )
-        except FileNotFoundError:
-            return SimulationResult(
-                status=SimulationStatus.SYSTEM_ERROR,
-                message="Verilator is not installed.",
-            )
-        except subprocess.TimeoutExpired:
-            return SimulationResult(
-                status=SimulationStatus.TIME_LIMIT_EXCEEDED,
-                message="Compilation timed out.",
-            )
-
-        if proc.returncode != 0:
-            return SimulationResult(
-                status=SimulationStatus.COMPILATION_ERROR,
-                message="Compilation failed.",
-                compilation_output=self._sanitize(proc.stdout + "\n" + proc.stderr),
-            )
-
-        binary = workspace.workspace_path / "obj_dir" / "Vtestbench"
-        try:
-            proc = subprocess.run(
-                [str(binary)],
-                capture_output=True,
-                text=True,
-                timeout=limits.timeout_seconds,
-                cwd=str(workspace.workspace_path),
-            )
-        except subprocess.TimeoutExpired:
-            return SimulationResult(
-                status=SimulationStatus.TIME_LIMIT_EXCEEDED,
-                message="Simulation timed out.",
-            )
-
-        return self.parser.parse(proc.stdout, proc.stderr)
+        binary_path = (
+            workspace.workspace_path / "simulation.out"
+            if settings.SIMULATOR.lower() == "icarus"
+            else workspace.workspace_path / "obj_dir" / "Vtestbench"
+        )
+        return simulator.simulate(binary_path=binary_path)
 
     def _sanitize(self, output: str) -> str:
         lines = output.split("\n")

@@ -1,10 +1,10 @@
-﻿services:
+services:
   - type: web
     name: hdlforge-backend
     env: docker
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
-    plan: starter
+    plan: free
     healthCheckPath: /api/health
     envVars:
       - key: DATABASE_URL

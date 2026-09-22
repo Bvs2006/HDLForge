@@ -77,15 +77,13 @@ def run_submission(
 def submit_solution(
     request: SubmissionRequest,
     db: Session = Depends(get_db),
-    user: Profile | None = Depends(get_optional_user),
+    user: Profile = Depends(require_authenticated_user),
 ) -> SubmissionResponse:
     """/submit handles full grading against public + hidden test cases.
 
-    If authenticated, user_id is derived exclusively from the verified JWT sub claim.
-    If unauthenticated, submission is evaluated cleanly without updating user progress.
+    user_id is derived exclusively from the verified JWT sub claim.
     """
-    user_id = user.id if user else None
-    return submission_service.submit_solution(db, request, user_id=user_id)
+    return submission_service.submit_solution(db, request, user_id=user.id)
 
 
 @router.get("/{submission_id}", response_model=SubmissionResponse)
@@ -136,7 +134,7 @@ def get_submission(
 def get_problem_submissions(
     problem_slug: str,
     db: Session = Depends(get_db),
-    user: Profile | None = Depends(get_optional_user),
+    user: Profile = Depends(require_authenticated_user),
 ):
     """Return user's submissions, or recent submissions for this problem."""
     problem = db.query(Problem).filter(Problem.slug == problem_slug).first()

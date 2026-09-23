@@ -3,8 +3,9 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { fetchProblems, fetchDailyChallenge } from "@/lib/api";
+import { fetchProblems, fetchDailyChallenge, fetchUserDashboard } from "@/lib/api";
 import { Problem, DailyChallenge } from "@/lib/types";
+import { useAuth } from "@/lib/auth";
 import DifficultyBadge from "@/components/DifficultyBadge";
 import {
   Search,
@@ -102,6 +103,49 @@ export default function ProblemsPage() {
   const [selectedCompany, setSelectedCompany] = useState("All Companies");
   const [statusFilter, setStatusFilter] = useState("all");
 
+  const { user } = useAuth();
+  const [solvedSlugs, setSolvedSlugs] = useState<Set<string>>(new Set());
+  const [solvedStats, setSolvedStats] = useState({
+    total: 0,
+    easy: 0,
+    medium: 0,
+    hard: 0,
+  });
+
+  useEffect(() => {
+    if (!user) {
+      setSolvedSlugs(new Set());
+      setSolvedStats({ total: 0, easy: 0, medium: 0, hard: 0 });
+      return;
+    }
+
+    async function loadUserStats() {
+      try {
+        const data = await fetchUserDashboard();
+        if (data) {
+          const slugs = new Set(
+            (data.problemProgress || [])
+              .filter((p) => p.status === "SOLVED")
+              .map((p) => p.slug)
+          );
+          setSolvedSlugs(slugs);
+          const easy = data.difficultyStats.find((d) => d.difficulty.toLowerCase() === "easy")?.solved || 0;
+          const medium = data.difficultyStats.find((d) => d.difficulty.toLowerCase() === "medium")?.solved || 0;
+          const hard = data.difficultyStats.find((d) => d.difficulty.toLowerCase() === "hard")?.solved || 0;
+          setSolvedStats({
+            total: data.problemsSolved,
+            easy,
+            medium,
+            hard,
+          });
+        }
+      } catch {
+        // Ignore
+      }
+    }
+    void loadUserStats();
+  }, [user]);
+
   const loadProblems = useCallback(async () => {
     setLoading(true);
     try {
@@ -126,7 +170,7 @@ export default function ProblemsPage() {
     void loadProblems();
   }, [loadProblems]);
 
-  // Client-side company filtering
+  // Client-side company and status filtering
   const filteredProblems = problems.filter((p) => {
     if (selectedCompany !== "All Companies") {
       if (!p.companyTags || p.companyTags.length === 0) return false;
@@ -134,6 +178,11 @@ export default function ProblemsPage() {
         (comp) => comp.toLowerCase() === selectedCompany.toLowerCase()
       );
       if (!matches) return false;
+    }
+    if (statusFilter === "solved") {
+      if (!solvedSlugs.has(p.slug)) return false;
+    } else if (statusFilter === "unsolved") {
+      if (solvedSlugs.has(p.slug)) return false;
     }
     return true;
   });
@@ -153,49 +202,56 @@ export default function ProblemsPage() {
   const mediumCount = filteredProblems.filter((p) => p.difficulty === "medium").length;
   const hardCount = filteredProblems.filter((p) => p.difficulty === "hard").length;
 
-  // Mock solved state (demonstrates LeetCode solved tracking)
-  const solvedCount = 3;
-  const solvedEasy = 2;
-  const solvedMed = 1;
-  const solvedHard = 0;
+  const solvedCount = solvedStats.total;
+  const solvedEasy = solvedStats.easy;
+  const solvedMed = solvedStats.medium;
+  const solvedHard = solvedStats.hard;
 
   return (
     <div className="mx-auto max-w-[1440px] px-4 py-6 sm:px-6 lg:px-8">
       {/* 1. Top LeetCode Study Plans Carousel */}
       <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
-        {STUDY_PLANS.map((plan) => (
-          <div
-            key={plan.id}
-            className={`group relative overflow-hidden rounded-2xl border ${plan.border} bg-gradient-to-br ${plan.color} p-4.5 transition-all hover:scale-[1.01] hover:shadow-lg`}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <span className="rounded-md bg-panel/80 px-2 py-0.5 text-[10px] font-mono font-bold uppercase tracking-wider text-text-primary border border-border">
-                {plan.badge}
-              </span>
-              <span className="text-xs font-mono font-semibold text-text-dim">
-                {plan.completed}/{plan.total} Solved
-              </span>
-            </div>
-            <h3 className="text-sm font-bold text-text-primary group-hover:text-accent transition-colors">
-              {plan.title}
-            </h3>
-            <p className="mt-1 text-xs text-text-muted line-clamp-2 leading-relaxed">
-              {plan.description}
-            </p>
-            {/* Progress bar */}
-            <div className="mt-3.5 flex items-center gap-3">
-              <div className="h-1.5 flex-1 rounded-full bg-surface overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-accent transition-all duration-500"
-                  style={{ width: `${(plan.completed / plan.total) * 100}%` }}
-                />
+        {STUDY_PLANS.map((plan) => {
+          const planCompleted = plan.id === "silicon-75"
+            ? Math.min(solvedCount, 75)
+            : plan.id === "nvidia-apple"
+            ? filteredProblems.filter((p) => p.companyTags?.some(c => c === "NVIDIA" || c === "Apple") && solvedSlugs.has(p.slug)).length
+            : Math.min(solvedCount, 20);
+
+          return (
+            <div
+              key={plan.id}
+              className={`group relative overflow-hidden rounded-2xl border ${plan.border} bg-gradient-to-br ${plan.color} p-4.5 transition-all hover:scale-[1.01] hover:shadow-lg`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="rounded-md bg-panel/80 px-2 py-0.5 text-[10px] font-mono font-bold uppercase tracking-wider text-text-primary border border-border">
+                  {plan.badge}
+                </span>
+                <span className="text-xs font-mono font-semibold text-text-dim">
+                  {planCompleted}/{plan.total} Solved
+                </span>
               </div>
-              <span className="text-[11px] font-mono font-bold text-text-primary">
-                {Math.round((plan.completed / plan.total) * 100)}%
-              </span>
+              <h3 className="text-sm font-bold text-text-primary group-hover:text-accent transition-colors">
+                {plan.title}
+              </h3>
+              <p className="mt-1 text-xs text-text-muted line-clamp-2 leading-relaxed">
+                {plan.description}
+              </p>
+              {/* Progress bar */}
+              <div className="mt-3.5 flex items-center gap-3">
+                <div className="h-1.5 flex-1 rounded-full bg-surface overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-accent transition-all duration-500"
+                    style={{ width: `${(planCompleted / plan.total) * 100}%` }}
+                  />
+                </div>
+                <span className="text-[11px] font-mono font-bold text-text-primary">
+                  {Math.round((planCompleted / plan.total) * 100)}%
+                </span>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* 2. LeetCode Daily Challenge Banner */}
@@ -379,7 +435,7 @@ export default function ProblemsPage() {
                       const isChip =
                         problem.category?.toLowerCase().includes("chip") ||
                         problem.slug.includes("chip");
-                      const isSolved = idx === 0 || idx === 1;
+                      const isSolved = solvedSlugs.has(problem.slug);
 
                       return (
                         <tr

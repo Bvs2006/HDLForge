@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { createContext, useCallback, useContext, useEffect, useState, ReactNode } from "react";
 import { User } from "./types";
@@ -40,6 +40,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const metadata = authUser.user_metadata || {};
       const username = profile?.username || (metadata.username as string) || authUser.email?.split("@")[0] || "User";
       const displayName = profile?.display_name || (metadata.display_name as string) || (metadata.username as string) || null;
+      const emailLower = (authUser.email || "").toLowerCase();
+      const isAdmin = Boolean(
+        profile?.is_admin ||
+        metadata.is_admin ||
+        emailLower === "admin@hdlforge.com" ||
+        emailLower === "bvsrujan@gmail.com" ||
+        username.toLowerCase() === "admin" ||
+        username.toLowerCase() === "bvsrujan"
+      );
 
       setUser({
         id: authUser.id,
@@ -52,15 +61,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         xp: profile?.xp ?? 0,
         level: profile?.level ?? 1,
         solvedCount: profile?.solved_count ?? 0,
+        isAdmin,
       });
     } catch (err) {
       console.warn("Failed to fetch profile:", err);
       // Fallback to basic auth metadata
       const metadata = authUser.user_metadata || {};
+      const emailLower = (authUser.email || "").toLowerCase();
+      const uname = (metadata.username as string) || authUser.email?.split("@")[0] || "User";
+      const isAdmin = Boolean(
+        metadata.is_admin ||
+        emailLower === "admin@hdlforge.com" ||
+        emailLower === "bvsrujan@gmail.com" ||
+        uname.toLowerCase() === "admin" ||
+        uname.toLowerCase() === "bvsrujan"
+      );
       setUser({
         id: authUser.id,
         email: authUser.email || "",
-        username: (metadata.username as string) || authUser.email?.split("@")[0] || "User",
+        username: uname,
         displayName: (metadata.display_name as string) || null,
         avatarUrl: null,
         createdAt: authUser.created_at,
@@ -68,6 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         xp: 0,
         level: 1,
         solvedCount: 0,
+        isAdmin,
       });
     }
   }, [supabase]);

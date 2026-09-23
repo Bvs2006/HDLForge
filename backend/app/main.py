@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import auth, dashboard, problems, submissions, waveforms, leaderboard, achievements, learning, ai
+from app.api.routes import auth, dashboard, problems, submissions, waveforms, leaderboard, achievements, learning, ai, admin
 from app.core.config import settings
 
 
@@ -34,7 +34,14 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning("seed_expand error: %s", e)
 
-    # 4. Seed learning content if present
+    # 4. Seed full 50-problem catalog (10 per category)
+    try:
+        from app.seed_full_catalog import seed_full_catalog
+        seed_full_catalog()
+    except Exception as e:
+        logger.warning("seed_full_catalog error: %s", e)
+
+    # 5. Seed learning content if present
     try:
         from app.seed_learning import seed_learning_content
         seed_learning_content()
@@ -69,6 +76,7 @@ app.include_router(leaderboard.router, prefix=settings.API_V1_PREFIX)
 app.include_router(achievements.router, prefix=settings.API_V1_PREFIX)
 app.include_router(learning.router, prefix=settings.API_V1_PREFIX)
 app.include_router(ai.router, prefix=settings.API_V1_PREFIX)
+app.include_router(admin.router, prefix=settings.API_V1_PREFIX)
 
 
 @app.get("/api/health")

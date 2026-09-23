@@ -20,6 +20,7 @@ import {
   Cpu,
   Sparkles,
   Zap,
+  Shield,
 } from "lucide-react";
 
 import ThemeToggle from "@/components/ThemeToggle";
@@ -107,6 +108,16 @@ export default function Navbar() {
             <div className="h-7 w-7 animate-pulse rounded-lg bg-border" />
           ) : user ? (
             <div className="flex items-center gap-2">
+              {user.isAdmin && (
+                <Link
+                  href="/admin"
+                  className="flex items-center gap-1.5 rounded-xl border border-warning/40 bg-warning/10 px-3 py-1.5 text-xs font-bold text-warning transition-all hover:bg-warning/20 hover:border-warning/60 shadow-sm"
+                  title="Admin Portal"
+                >
+                  <Shield className="h-3.5 w-3.5" />
+                  <span>Admin</span>
+                </Link>
+              )}
               <Link
                 href="/dashboard"
                 className="flex items-center gap-1.5 rounded-xl border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-text-secondary transition-all hover:border-accent/40 hover:text-accent hover:bg-surface/80"
@@ -215,6 +226,20 @@ export default function Navbar() {
               );
             })}
           </div>
+
+          {user?.isAdmin && (
+            <Link
+              href="/admin"
+              onClick={() => setMobileOpen(false)}
+              className="flex items-center justify-between rounded-xl px-3 py-2 text-xs font-bold bg-warning/15 text-warning border border-warning/30"
+            >
+              <span className="flex items-center gap-2.5">
+                <Shield className="h-4 w-4" />
+                <span>Admin Portal</span>
+              </span>
+              <ChevronRight className="h-3.5 w-3.5 text-warning/70" />
+            </Link>
+          )}
 
           <div className="pt-2 border-t border-border/50">
             {user ? (

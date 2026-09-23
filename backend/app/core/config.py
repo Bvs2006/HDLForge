@@ -53,6 +53,16 @@ class Settings(BaseSettings):
     AI_RATE_LIMIT_PER_MINUTE: int = 15
 
     SIMULATOR: str = "icarus"
+    ADMIN_USERNAMES: str = "admin,bvsrujan,hdladmin"
+    ADMIN_EMAILS: str = "admin@hdlforge.com,bvsrujan@gmail.com"
+
+    @property
+    def admin_usernames_set(self) -> set[str]:
+        return {u.strip().lower() for u in self.ADMIN_USERNAMES.split(",") if u.strip()}
+
+    @property
+    def admin_emails_set(self) -> set[str]:
+        return {e.strip().lower() for e in self.ADMIN_EMAILS.split(",") if e.strip()}
 
     model_config = {
         "env_file": ".env",

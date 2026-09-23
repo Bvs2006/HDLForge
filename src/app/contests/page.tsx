@@ -179,26 +179,36 @@ export default function ContestsPage() {
                 </span>
               </div>
 
-              <button
-                onClick={() => handleToggleRegister(featuredContest.id)}
-                className={`w-full flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-all shadow-md active:scale-95 ${
-                  registeredMap[featuredContest.id]
-                    ? "bg-success/20 text-success border border-success/40"
-                    : "bg-accent text-[#070707] hover:bg-accent-hover hover:shadow-[0_0_16px_rgba(0,217,165,0.3)]"
-                }`}
-              >
-                {registeredMap[featuredContest.id] ? (
-                  <>
-                    <CheckCircle2 className="h-4 w-4 text-success" />
-                    <span>Registered</span>
-                  </>
-                ) : (
-                  <>
-                    <Zap className="h-4 w-4" />
-                    <span>Register Now</span>
-                  </>
-                )}
-              </button>
+              <div className="w-full space-y-2">
+                <Link
+                  href={`/contests/${featuredContest.id}`}
+                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-xs font-bold text-[#070707] hover:bg-accent-hover hover:shadow-[0_0_16px_rgba(0,217,165,0.3)] transition-all shadow-md active:scale-95"
+                >
+                  <Trophy className="h-4 w-4" />
+                  <span>Enter Contest Arena</span>
+                </Link>
+
+                <button
+                  onClick={() => handleToggleRegister(featuredContest.id)}
+                  className={`w-full flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition-all ${
+                    registeredMap[featuredContest.id]
+                      ? "bg-success/20 text-success border border-success/40"
+                      : "bg-surface text-text-secondary border border-border hover:border-accent hover:text-accent"
+                  }`}
+                >
+                  {registeredMap[featuredContest.id] ? (
+                    <>
+                      <CheckCircle2 className="h-3.5 w-3.5 text-success" />
+                      <span>Registered</span>
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="h-3.5 w-3.5" />
+                      <span>Quick Register</span>
+                    </>
+                  )}
+                </button>
+              </div>
 
               <span className="text-[10px] text-text-dim mt-2 block">
                 Free entry • Verilog / SystemVerilog
@@ -264,19 +274,19 @@ export default function ContestsPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 shrink-0">
-                    {isPast ? (
-                      <Link
-                        href={`/problems/${c.problems[0]?.slug || "and-gate"}`}
-                        className="flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-text-secondary hover:border-accent/40 hover:text-accent transition-all"
-                      >
-                        <span>Practice Virtual</span>
-                        <ArrowRight className="h-3.5 w-3.5" />
-                      </Link>
-                    ) : (
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Link
+                      href={`/contests/${c.id}`}
+                      className="flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-bold text-[#070707] hover:bg-accent-hover transition-all shadow-sm active:scale-95"
+                    >
+                      <Trophy className="h-3.5 w-3.5" />
+                      <span>{isPast ? "View Arena" : "Enter Arena"}</span>
+                    </Link>
+
+                    {!isPast && (
                       <button
                         onClick={() => handleToggleRegister(c.id)}
-                        className={`rounded-lg px-3.5 py-1.5 text-xs font-bold transition-all ${
+                        className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all ${
                           isRegistered
                             ? "bg-success/15 text-success border border-success/30"
                             : "bg-surface text-text-primary border border-border hover:border-accent hover:text-accent"

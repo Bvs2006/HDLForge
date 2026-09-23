@@ -453,8 +453,47 @@ export default function LearnPage() {
             }`}
           >
             <GraduationCap className="h-3.5 w-3.5" />
-            <span>Study Plan</span>
+            <span>Study Plans</span>
           </button>
+        </div>
+      </div>
+
+      {/* ECE & EEE Silicon Engineering Visual Banner */}
+      <div className="mb-8 relative overflow-hidden rounded-2xl border border-border bg-panel p-5">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+          <div className="md:col-span-2 space-y-2">
+            <div className="inline-flex items-center gap-1.5 rounded-md bg-accent/15 px-2.5 py-0.5 text-[10px] font-mono font-bold uppercase text-accent border border-accent/30">
+              ECE &amp; EEE Semiconductor Curriculum
+            </div>
+            <h2 className="text-lg font-bold text-text-primary">
+              Industry-Standard ASIC, FPGA &amp; Design Verification Tracks
+            </h2>
+            <p className="text-xs text-text-muted leading-relaxed max-w-xl">
+              From physical timing closures (Static Timing Analysis) and Clock Domain Crossing (CDC) to high-speed AXI/APB bus protocols, master the exact competencies semiconductor employers demand.
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <div className="relative h-24 w-1/2 overflow-hidden rounded-xl border border-border">
+              <img
+                src="/images/hardware/silicon-chip.jpg"
+                alt="Silicon ASIC"
+                className="h-full w-full object-cover"
+              />
+              <span className="absolute bottom-1 left-1.5 rounded bg-panel/90 px-1.5 py-0.5 text-[9px] font-mono font-bold text-accent">
+                ASIC RTL
+              </span>
+            </div>
+            <div className="relative h-24 w-1/2 overflow-hidden rounded-xl border border-border">
+              <img
+                src="/images/hardware/fpga-board.jpg"
+                alt="FPGA Board"
+                className="h-full w-full object-cover"
+              />
+              <span className="absolute bottom-1 left-1.5 rounded bg-panel/90 px-1.5 py-0.5 text-[9px] font-mono font-bold text-info">
+                FPGA Lab
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 

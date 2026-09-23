@@ -370,6 +370,160 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Real Hardware & Semiconductor Visual Showcase (ECE & EEE Disciplines) */}
+      <section className="px-4 py-16 sm:px-6 lg:px-8 max-w-6xl mx-auto">
+        <div className="mb-12 text-center">
+          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent/10 px-3.5 py-1 text-xs font-semibold text-accent">
+            <Cpu className="h-3.5 w-3.5" />
+            <span>Silicon to System • ECE &amp; EEE Curriculum</span>
+          </div>
+          <h2 className="text-2xl sm:text-4xl font-extrabold text-text-primary tracking-tight">
+            Bridging Academic Theory with Silicon Reality
+          </h2>
+          <p className="mt-2 text-xs sm:text-sm text-text-muted max-w-2xl mx-auto leading-relaxed">
+            From microscopic standard-cell lithography to FPGA hardware emulation benches, HDLForge trains electronics, electrical, and computer engineering students for the modern semiconductor stack.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+          {/* Card 1: VLSI & Silicon ASIC Design */}
+          <div className="group rounded-2xl border border-border bg-panel overflow-hidden transition-all duration-300 hover:border-accent/50 hover:shadow-[0_0_30px_rgba(0,217,165,0.15)] flex flex-col justify-between">
+            <div>
+              <div className="relative h-44 w-full overflow-hidden bg-surface">
+                <img
+                  src="/images/hardware/silicon-chip.jpg"
+                  alt="Microscopic Silicon Chip Die"
+                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-panel via-transparent to-transparent" />
+                <span className="absolute top-3 left-3 rounded-md bg-panel/90 backdrop-blur-md px-2.5 py-1 text-[10px] font-mono font-bold text-accent border border-accent/30">
+                  ECE • VLSI &amp; ASIC
+                </span>
+              </div>
+              <div className="p-4 space-y-2">
+                <h3 className="text-sm font-bold text-text-primary group-hover:text-accent transition-colors">
+                  Silicon Die &amp; Gate Arrays
+                </h3>
+                <p className="text-xs text-text-muted leading-relaxed">
+                  Design synthesis-ready RTL. Master Boolean gates, adders, decoders, and static timing constraints evaluated at nanometer scale.
+                </p>
+              </div>
+            </div>
+            <div className="p-4 pt-0">
+              <Link
+                href="/problems?category=Combinational+Logic"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-accent hover:underline"
+              >
+                <span>Combinational Logic (10)</span>
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+          </div>
+
+          {/* Card 2: FPGA Hardware Emulation */}
+          <div className="group rounded-2xl border border-border bg-panel overflow-hidden transition-all duration-300 hover:border-accent/50 hover:shadow-[0_0_30px_rgba(0,217,165,0.15)] flex flex-col justify-between">
+            <div>
+              <div className="relative h-44 w-full overflow-hidden bg-surface">
+                <img
+                  src="/images/hardware/fpga-board.jpg"
+                  alt="FPGA Hardware Development Kit"
+                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-panel via-transparent to-transparent" />
+                <span className="absolute top-3 left-3 rounded-md bg-panel/90 backdrop-blur-md px-2.5 py-1 text-[10px] font-mono font-bold text-info border border-info/30">
+                  Hardware Emulation
+                </span>
+              </div>
+              <div className="p-4 space-y-2">
+                <h3 className="text-sm font-bold text-text-primary group-hover:text-accent transition-colors">
+                  FPGA Prototyping Systems
+                </h3>
+                <p className="text-xs text-text-muted leading-relaxed">
+                  Implement sequential registers, LFSR pseudo-random streams, and synchronous circular FIFOs with FPGA BRAM and DSP blocks.
+                </p>
+              </div>
+            </div>
+            <div className="p-4 pt-0">
+              <Link
+                href="/problems?category=Sequential+Logic"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-info hover:underline"
+              >
+                <span>Sequential Logic (10)</span>
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+          </div>
+
+          {/* Card 3: Semiconductor Cleanroom Fab */}
+          <div className="group rounded-2xl border border-border bg-panel overflow-hidden transition-all duration-300 hover:border-accent/50 hover:shadow-[0_0_30px_rgba(0,217,165,0.15)] flex flex-col justify-between">
+            <div>
+              <div className="relative h-44 w-full overflow-hidden bg-surface">
+                <img
+                  src="/images/hardware/wafer-fab.jpg"
+                  alt="Semiconductor Wafer Lithography"
+                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-panel via-transparent to-transparent" />
+                <span className="absolute top-3 left-3 rounded-md bg-panel/90 backdrop-blur-md px-2.5 py-1 text-[10px] font-mono font-bold text-warning border border-warning/30">
+                  Semiconductor Foundry
+                </span>
+              </div>
+              <div className="p-4 space-y-2">
+                <h3 className="text-sm font-bold text-text-primary group-hover:text-accent transition-colors">
+                  Wafer Fab &amp; Memory Layout
+                </h3>
+                <p className="text-xs text-text-muted leading-relaxed">
+                  Model SRAM cells, ROM arrays, and CAM memory structures fabricated across multi-project wafers at TSMC, Intel, and GlobalFoundries.
+                </p>
+              </div>
+            </div>
+            <div className="p-4 pt-0">
+              <Link
+                href="/problems?category=Chip+Design"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-warning hover:underline"
+              >
+                <span>Chip Design &amp; Memory (10)</span>
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+          </div>
+
+          {/* Card 4: Waveform Verification & Oscilloscopes */}
+          <div className="group rounded-2xl border border-border bg-panel overflow-hidden transition-all duration-300 hover:border-accent/50 hover:shadow-[0_0_30px_rgba(0,217,165,0.15)] flex flex-col justify-between">
+            <div>
+              <div className="relative h-44 w-full overflow-hidden bg-surface">
+                <img
+                  src="/images/hardware/oscilloscope.jpg"
+                  alt="Tektronix Digital Oscilloscope & Logic Analyzer"
+                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-panel via-transparent to-transparent" />
+                <span className="absolute top-3 left-3 rounded-md bg-panel/90 backdrop-blur-md px-2.5 py-1 text-[10px] font-mono font-bold text-purple-400 border border-purple-400/30">
+                  EEE &amp; Test Engineering
+                </span>
+              </div>
+              <div className="p-4 space-y-2">
+                <h3 className="text-sm font-bold text-text-primary group-hover:text-accent transition-colors">
+                  Bus Protocols &amp; FSMs
+                </h3>
+                <p className="text-xs text-text-muted leading-relaxed">
+                  Debug timing violations, cycle-by-cycle clock jitter, and UART/SPI finite state controllers with real-time browser VCD waveforms.
+                </p>
+              </div>
+            </div>
+            <div className="p-4 pt-0">
+              <Link
+                href="/problems?category=Finite+State+Machines"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-purple-400 hover:underline"
+              >
+                <span>Finite State Machines (10)</span>
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Daily Challenge & Weekly Contests Twin Cards */}
       <section className="px-4 py-8 sm:px-6 lg:px-8 max-w-5xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
